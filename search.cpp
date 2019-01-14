@@ -29,7 +29,7 @@ namespace Search {
 		list->moves[bestNum] = temp;
 	}
 
-	static void clear_for_search(Position& pos, S_SEARCHINFO *info) {
+	static void clear_for_search(Position& pos, SearchInfo *info) {
 		pos.history_moves_reset();
 		pos.killer_moves_reset();
 		pos.ply_reset();
@@ -41,7 +41,7 @@ namespace Search {
 		info->fhf = 0;
 	}
 
-	static int quiescence(int alpha, int beta, Position& pos, S_SEARCHINFO *info) {
+	static int quiescence(int alpha, int beta, Position& pos, SearchInfo *info) {
 		Timeman::check_time_up(info);
 		
 		info->nodes++;
@@ -101,7 +101,7 @@ namespace Search {
 		return alpha;
 	}
 
-	static int alphabeta(int alpha, int beta, int depth, Position& pos, S_SEARCHINFO *info) {
+	static int alphabeta(int alpha, int beta, int depth, Position& pos, SearchInfo *info) {
 
 		if (depth == 0) return quiescence(alpha, beta, pos, info);
 
@@ -201,7 +201,7 @@ namespace Search {
 		return alpha;
 	}
 
-	void start(Position& pos, S_SEARCHINFO *info) {
+	void start(Position& pos, SearchInfo *info) {
 		int bestScore = -INF;
 		Move bestMove = MOVE_NONE;
 		int pvmNum = 0;

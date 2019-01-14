@@ -94,7 +94,7 @@ namespace UCI{
 		}
 	}
 
-	void go(Position& pos, S_SEARCHINFO *info, istringstream& is) {
+	void go(Position& pos, SearchInfo *info, istringstream& is) {
 		string token;
 		int depth = -1, movestogo = 30, movetime = -1;
 		int time = -1, inc = 0;
@@ -162,14 +162,14 @@ namespace UCI{
 		pos.ply_reset();
 	}
 
-	void stop(S_SEARCHINFO *info) {
+	void stop(SearchInfo *info) {
 		info->stopped = true;
 		if (SearchThread.joinable()) SearchThread.join();
 	}
 
 	void loop() {
 		string token, cmd;
-		S_SEARCHINFO info[1];
+		SearchInfo info[1];
 		Position pos = Position();
 
 		init();

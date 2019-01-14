@@ -39,7 +39,7 @@ public:
 
 	bool is_repetition();
 	Move best_move();
-	void print_pv(S_SEARCHINFO *info, int depth);
+	void print_pv(SearchInfo *info, int depth);
 
 	// Move ordering, non captures
 	int history_move(Move move) const;

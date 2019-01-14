@@ -102,7 +102,7 @@ struct Movelist {
 	int count;
 };
 
-struct S_SEARCHINFO {
+struct SearchInfo {
 	int startTime;
 	int stopTime;
 	int depth;

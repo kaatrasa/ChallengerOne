@@ -136,7 +136,7 @@ int Position::pv(const int depth) {
 	return count;
 }
 
-void Position::print_pv(S_SEARCHINFO *info, int depth) {
+void Position::print_pv(SearchInfo *info, int depth) {
 	int pvCount = pv(depth);
 	int pvIndex = 0;
 	std::cout << "pv ";
