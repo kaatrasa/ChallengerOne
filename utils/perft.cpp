@@ -14,7 +14,6 @@ namespace Perft {
 		}
 
 		Movelist list = Movelist();
-		list.count = 0;
 		Movegen::get_moves(pos, list);
 
 		int moveNum = 0;
@@ -34,9 +33,8 @@ namespace Perft {
 		std::clock_t start = std::clock();
 		unsigned long long leafNodes = 0;
 		Movelist list = Movelist();
-		depth = depth <= 0 ? 1 : depth;
 
-		list.count = 0;
+		depth = depth <= 0 ? 1 : depth;
 		Movegen::get_moves(pos, list);
 
 		Move move;

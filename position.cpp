@@ -106,12 +106,10 @@ void Position::set(string fen) {
 }
 
 Move Position::best_move() {
-	Move move;
-	int score;
+	bool found;
+	TTEntry* entry = TT.probe(posKey_, found);
 
-	if (TT.probe(posKey_, &move, &score, -INF, INF, 0))
-		return move;
-
+	if (found) return entry->move;
 	return MOVE_NONE;
 }
 
@@ -151,7 +149,6 @@ void Position::print_pv(SearchInfo& info, const int depth) {
 
 bool Position::is_real_move(Move move) {
 	Movelist list = Movelist();
-	list.count = 0;
 	Movegen::get_moves(*this, list);
 
 	for (int moveNum = 0; moveNum < list.count; ++moveNum)

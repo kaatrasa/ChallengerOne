@@ -31,34 +31,11 @@ void TranspositionTable::save(Key posKey, const Move move, int score, TTFlag fla
 	table_[index].score = score;
 }
 
-bool TranspositionTable::probe(Key posKey, Move* move, int* score, int alpha, int beta, int depth) const {
-	unsigned long long index = posKey % entryCount_;
+TTEntry* TranspositionTable::probe(Key key, bool& found) const {
+	unsigned long long index = key % entryCount_;
 
-	if (table_[index].posKey == posKey) {
-		*move = table_[index].move;
-		if (table_[index].depth >= depth) {
-			*score = table_[index].score;
+	if (table_[index].posKey == key)
+		return found = true, &table_[index];
 
-			switch (table_[index].flag) {
-			case UPPERBOUND:
-				if (*score <= alpha) {
-					*score = alpha;
-					return true;
-				}
-				break;
-			case LOWERBOUND:
-				if (*score >= beta) {
-					*score = beta;
-					return true;
-				}
-				break;
-			case EXACT:
-				return true;
-			default:
-				break;
-			}
-		}
-	}
-
-	return false;
+	return found = false, &table_[index];
 }

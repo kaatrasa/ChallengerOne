@@ -1,5 +1,4 @@
-#include <algorithm>
-#include <intrin.h>
+﻿#include <algorithm>
 #include <iostream>
 
 #include "search.h"
@@ -51,16 +50,13 @@ namespace Search {
 
 		int score = Evaluation::evaluate(pos);
 
-		if (score >= beta) {
+		if (score >= beta)
 			return beta;
-		}
 
-		if (score > alpha) {
+		if (score > alpha)
 			alpha = score;
-		}
 
 		Movelist list = Movelist();
-		list.count = 0;
 		Movegen::get_captures(pos, list);
 
 		int legal = 0;
@@ -101,37 +97,44 @@ namespace Search {
 		return alpha;
 	}
 
-	static int alphabeta(int alpha, int beta, int depth, Position& pos, SearchInfo& info) {
-
-		if (depth == 0) return quiescence(alpha, beta, pos, info);
-
+	static int search(int alpha, int beta, int depth, Position& pos, SearchInfo& info) {
 		Timeman::check_time_up(info);
+
+		if (pos.ply() > MAX_DEPTH - 1)
+			return Evaluation::evaluate(pos);
+
+		if (pos.is_repetition() || pos.fifty_move() >= 100)
+			return 0;
+
+		int alphaOrig = alpha;
+		Move pvMove = MOVE_NONE;
+		bool found;
+
+		TTEntry* ttEntry = TT.probe(pos.pos_key(), found);
+		if (found && ttEntry->depth >= depth) {
+			pvMove = ttEntry->move;
+
+			if (ttEntry->flag == EXACT)
+				return ttEntry->score;
+			else if (ttEntry->flag == LOWERBOUND)
+				alpha = std::max(alpha, ttEntry->score);
+			else if (ttEntry->flag == UPPERBOUND)
+				beta = std::min(beta, ttEntry->score);
+		
+			if (alpha >= beta) return ttEntry->score;
+		}
+
+		if (depth == 0)
+			return quiescence(alpha, beta, pos, info);
 
 		info.nodes++;
 
-		if (pos.is_repetition() || pos.fifty_move() >= 100) return 0;
-		if (pos.ply() > MAX_DEPTH - 1) return Evaluation::evaluate(pos);
-
-		int score = -INF;
-		Move pvMove = MOVE_NONE;
-
-		if (TT.probe(pos.pos_key(), &pvMove, &score, alpha, beta, depth))
-			return score;
-
 		Movelist list = Movelist();
-		list.count = 0;
 		Movegen::get_moves(pos, list);
-
-		int legal = 0;
-		int oldAlpha = alpha;
-		Move bestMove = MOVE_NONE;
 		int bestScore = -INF;
-		score = -INF;
-
+		
 		if (pvMove != MOVE_NONE) {
-
 			for (int moveNum = 0; moveNum < list.count; ++moveNum) {
-
 				if (list.moves[moveNum].move == pvMove) {
 					list.moves[moveNum].score = 2000000;
 					break;
@@ -139,68 +142,72 @@ namespace Search {
 			}
 		}
 
-		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
-			pick_move(moveNum, list);
-			if (!pos.do_move(list.moves[moveNum].move)) continue;
+		Move bestMove = MOVE_NONE;
+		int score = -INF;
+		int legal = 0;
 
+		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
+			// Move ordering
+			pick_move(moveNum, list);
+			
+			// Try to move
+			if (!pos.do_move(list.moves[moveNum].move)) continue;
+			
+			// Move ok
 			legal++;
-			score = -alphabeta(-beta, -alpha, depth - 1, pos, info);
+
+			// Evaluate the move
+			int childScore = -search(-beta, -alpha, depth - 1, pos, info);
 			pos.undo_move();
 
-			if (info.stopped) {
+			if (info.stopped)
 				return 0;
-			}
 
-			if (score > bestScore) {
-				bestScore = score;
+			// New best move
+			if (childScore > score) {
+				score = childScore;
 				bestMove = list.moves[moveNum].move;
 
-				// Best move for maximizing player
+				// Alpha cut-off
 				if (score > alpha) {
-					// Bad move for minimizing player
-					if (score >= beta) {
+					alpha = score;
 
-						// if we searched best move first
+					// Beta cut-off
+					if (alpha >= beta) {
+
+						// Stats..
 						if (legal == 1) info.fhf++;
-
 						info.fh++;
 
-						if (!(bestMove & FLAGCAP)) {
+						if (!(bestMove & FLAGCAP))
 							pos.killer_move_set(bestMove);
-						}
-						
-						TT.save(pos.pos_key(), bestMove, beta, LOWERBOUND, depth);
-						return beta;
-					}
 
-					alpha = score;
+						break;
+					}
 
 					if (!(bestMove & FLAGCAP))
 						pos.history_move_set(bestMove, depth*depth);
 				}
 			}
 		}
-		
+
 		if (legal == 0) {
-			// checkmate in ply-moves
-			if (pos.attackers_to(pos.king_sq()) & OccupiedBB[pos.side_to_move() ^ 1][ANY_PIECE]) {
-				return -MATE_SCORE + pos.ply();
-			}
+			if (pos.attackers_to(pos.king_sq()) & OccupiedBB[pos.side_to_move() ^ 1][ANY_PIECE])
+				return -MATE_SCORE + pos.ply(); // checkmate in ply moves
+			else
+				return 0; // stalemate
+		}
 
-			// stalemate
-			else {
-				return 0;
-			}
-		}	
-
-		if (alpha != oldAlpha)
-			TT.save(pos.pos_key(), bestMove, bestScore, EXACT, depth);
+		if (score <= alphaOrig)
+			TT.save(pos.pos_key(), bestMove, score, UPPERBOUND, depth);
+		else if (score >= beta)
+			TT.save(pos.pos_key(), bestMove, score, LOWERBOUND, depth);
 		else
-			TT.save(pos.pos_key(), bestMove, alpha, UPPERBOUND, depth);
+			TT.save(pos.pos_key(), bestMove, score, EXACT, depth);
 
-		return alpha;
+		return score;
 	}
-
+	
 	void start(Position& pos, SearchInfo& info) {
 		int bestScore = -INF;
 		Move bestMove = MOVE_NONE;
@@ -209,11 +216,7 @@ namespace Search {
 		clear_for_search(pos, info);
 
 		while (currentDepth <= info.depth) {
-
-			bestScore = alphabeta(-INF, INF, currentDepth, pos, info);
-			if (info.stopped) {
-				break;
-			}
+			bestScore = search(-INF, INF, currentDepth, pos, info);
 			
 			if (abs(bestScore) >= MATE_SCORE - MAX_DEPTH) {
 				if (bestScore >= 0)
@@ -228,6 +231,8 @@ namespace Search {
 			pos.print_pv(info, currentDepth);
 			bestMove = pos.best_move();
 			++currentDepth;
+
+			if (info.stopped) break;
 		}
 
 		info.stopped = true;

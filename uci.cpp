@@ -32,7 +32,6 @@ Move parse_move(Position& pos, string moveStr) {
 	Square to = TypeConvertions::str_to_sq(moveStr.substr(2, 2));
 
 	Movelist list = Movelist();
-	list.count = 0;
 	Movegen::get_moves(pos, list);
 	int moveNum = 0;
 	Move move = MOVE_NONE;
@@ -133,7 +132,7 @@ namespace UCI{
 		<< " stop:" << info.stopTime << " depth:" << info.depth
 		<< " timeset:" << info.timeSet << endl;
 		
-		SearchThread = thread(Search::start, pos, info);
+		SearchThread = thread(Search::start, pos, std::ref(info));
 	}
 
 	void position(Position& pos, istringstream& is) {
@@ -186,7 +185,8 @@ namespace UCI{
 			token.clear();
 			is >> skipws >> token;
 
-			if (info.stopped && SearchThread.joinable()) SearchThread.join();
+			if (info.stopped && SearchThread.joinable())
+				SearchThread.join();
 
 			if (token == "quit") {
 				info.quit = true;

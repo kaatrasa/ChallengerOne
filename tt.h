@@ -18,7 +18,7 @@ public:
 
 	void clear();
 	void save(Key posKey, const Move move, int score, TTFlag flag, const int depth);
-	bool probe(Key posKey, Move* move, int* score, int alpha, int beta, int depth) const;
+	TTEntry* probe(Key key, bool& found) const;
 
 private:
 	TTEntry* table_;

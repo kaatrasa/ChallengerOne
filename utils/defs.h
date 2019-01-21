@@ -2,6 +2,9 @@
 
 #include <intrin.h>
 
+
+#define NOMINMAX
+
 typedef unsigned long long Bitboard;
 typedef unsigned long long Key;
 
@@ -99,7 +102,7 @@ struct MoveEntry {
 
 struct Movelist {
 	MoveEntry moves[MAX_POSITIONMOVES];
-	int count;
+	int count = 0;
 };
 
 struct SearchInfo {
