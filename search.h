@@ -4,5 +4,5 @@
 #include "utils/defs.h"
 
 namespace Search {
-	void start(Position& pos, SearchInfo *info);
+	void start(Position& pos, SearchInfo& info);
 }

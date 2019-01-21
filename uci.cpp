@@ -31,15 +31,15 @@ Move parse_move(Position& pos, string moveStr) {
 	Square from = TypeConvertions::str_to_sq(moveStr.substr(0, 2));
 	Square to = TypeConvertions::str_to_sq(moveStr.substr(2, 2));
 
-	Movelist list[1];
-	list->count = 0;
+	Movelist list = Movelist();
+	list.count = 0;
 	Movegen::get_moves(pos, list);
 	int moveNum = 0;
 	Move move = MOVE_NONE;
 	PieceType promPce = NO_PIECE;
 
-	for (moveNum = 0; moveNum < list->count; ++moveNum) {
-		move = list->moves[moveNum].move;
+	for (moveNum = 0; moveNum < list.count; ++moveNum) {
+		move = list.moves[moveNum].move;
 		if (from_sq(move) == from && to_sq(move) == to) {
 			promPce = promoted(move);
 			if (promPce != NO_PIECE) {
@@ -94,11 +94,11 @@ namespace UCI{
 		}
 	}
 
-	void go(Position& pos, SearchInfo *info, istringstream& is) {
+	void go(Position& pos, SearchInfo& info, istringstream& is) {
 		string token;
 		int depth = -1, movestogo = 30, movetime = -1;
 		int time = -1, inc = 0;
-		info->timeSet = false;
+		info.timeSet = false;
 
 		while (is >> token)
 			if (token == "wtime")		   is >> time;
@@ -115,23 +115,23 @@ namespace UCI{
 			movestogo = 1;
 		}
 
-		info->startTime = Timeman::get_time();
-		info->depth = depth;
+		info.startTime = Timeman::get_time();
+		info.depth = depth;
 
 		if (time != -1) {
-			info->timeSet = true;
+			info.timeSet = true;
 			time /= movestogo;
 			time -= 50;
-			info->stopTime = info->startTime + time + inc;
+			info.stopTime = info.startTime + time + inc;
 		}
 
 		if (depth == -1) {
-			info->depth = MAXDEPTH;
+			info.depth = MAX_DEPTH;
 		}
 
-		cout << "time:" << time << " start:" << info->startTime 
-		<< " stop:" << info->stopTime << " depth:" << info->depth
-		<< " timeset:" << info->timeSet << endl;
+		cout << "time:" << time << " start:" << info.startTime 
+		<< " stop:" << info.stopTime << " depth:" << info.depth
+		<< " timeset:" << info.timeSet << endl;
 		
 		SearchThread = thread(Search::start, pos, info);
 	}
@@ -162,21 +162,21 @@ namespace UCI{
 		pos.ply_reset();
 	}
 
-	void stop(SearchInfo *info) {
-		info->stopped = true;
+	void stop(SearchInfo& info) {
+		info.stopped = true;
 		if (SearchThread.joinable()) SearchThread.join();
 	}
 
 	void loop() {
 		string token, cmd;
-		SearchInfo info[1];
+		SearchInfo info = SearchInfo();
 		Position pos = Position();
 
 		init();
 		uci();
 
-		info->quit = false;
-		info->stopped = false;
+		info.quit = false;
+		info.stopped = false;
 		pos.set(StartFEN);
 
 		while (true) {
@@ -186,10 +186,10 @@ namespace UCI{
 			token.clear();
 			is >> skipws >> token;
 
-			if (info->stopped && SearchThread.joinable()) SearchThread.join();
+			if (info.stopped && SearchThread.joinable()) SearchThread.join();
 
 			if (token == "quit") {
-				info->quit = true;
+				info.quit = true;
 				stop(info);
 				break; 
 			}

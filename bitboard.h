@@ -96,34 +96,34 @@ inline Square pop_lsb(Bitboard& b) {
 	_BitScanForward64(&to, b);
 	b = _blsr_u64(b);
 	
-	assert(to >= A1 && to <= SQ_NONE);
+	assert(to >= SQ_A1 && to <= SQ_NONE);
 	return Square(to);
 }
 
 // Overloads of bitwise operators between a Bitboard and a Square for testing
 // whether a given bit is set in a bitboard, and for setting and clearing bits.
 inline Bitboard operator&(Bitboard b, Square s) {
-	assert(s >= A1 && s <= H8);
+	assert(s >= SQ_A1 && s <= SQ_H8);
 	return b & SquareBB[s];
 }
 
 inline Bitboard operator|(Bitboard b, Square s) {
-	assert(s >= A1 && s <= H8);
+	assert(s >= SQ_A1 && s <= SQ_H8);
 	return b | SquareBB[s];
 }
 
 inline Bitboard operator^(Bitboard b, Square s) {
-	assert(s >= A1 && s <= H8);
+	assert(s >= SQ_A1 && s <= SQ_H8);
 	return b ^ SquareBB[s];
 }
 
 inline Bitboard& operator|=(Bitboard& b, Square s) {
-	assert(s >= A1 && s <= H8);
+	assert(s >= SQ_A1 && s <= SQ_H8);
 	return b |= SquareBB[s];
 }
 
 inline Bitboard& operator^=(Bitboard& b, Square s) {
-	assert(s >= A1 && s <= H8);
+	assert(s >= SQ_A1 && s <= SQ_H8);
 	return b ^= SquareBB[s];
 }
 

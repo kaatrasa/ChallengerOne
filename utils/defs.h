@@ -5,13 +5,13 @@
 typedef unsigned long long Bitboard;
 typedef unsigned long long Key;
 
-constexpr int MAXGAMELENGTH = 256;
-constexpr int MAXPOSITIONMOVES = 256;
+constexpr int MAX_GAMELENGTH = 256;
+constexpr int MAX_POSITIONMOVES = 256;
+constexpr int MAX_DEPTH = 64;
 constexpr int SQUARE_CNT = 64;
 constexpr int FILE_CNT = 8;
 constexpr int RANK_CNT = 8;
 constexpr int MATE_SCORE = 100000;
-constexpr int MAXDEPTH = 64;
 constexpr int INF = 2000000;
 
 enum Color { 
@@ -98,7 +98,7 @@ struct MoveEntry {
 };
 
 struct Movelist {
-	MoveEntry moves[MAXPOSITIONMOVES];
+	MoveEntry moves[MAX_POSITIONMOVES];
 	int count;
 };
 

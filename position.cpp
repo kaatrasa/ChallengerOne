@@ -136,7 +136,7 @@ int Position::pv(const int depth) {
 	return count;
 }
 
-void Position::print_pv(SearchInfo *info, int depth) {
+void Position::print_pv(SearchInfo& info, const int depth) {
 	int pvCount = pv(depth);
 	int pvIndex = 0;
 	std::cout << "pv ";
@@ -150,20 +150,18 @@ void Position::print_pv(SearchInfo *info, int depth) {
 }
 
 bool Position::is_real_move(Move move) {
-	Movelist list[1];
-	list->count = 0;
+	Movelist list = Movelist();
+	list.count = 0;
 	Movegen::get_moves(*this, list);
 
-	for (int moveNum = 0; moveNum < list->count; ++moveNum) {
-
-		if (list->moves[moveNum].move == move) {
-
+	for (int moveNum = 0; moveNum < list.count; ++moveNum)
+		if (list.moves[moveNum].move == move) {
 			if (!do_move(move)) return false;
 			undo_move();
-
+			
 			return true;
 		}
-	}
+
 	return false;
 }
 

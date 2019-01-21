@@ -39,7 +39,7 @@ public:
 
 	bool is_repetition();
 	Move best_move();
-	void print_pv(SearchInfo *info, int depth);
+	void print_pv(SearchInfo& info, const int depth);
 
 	// Move ordering, non captures
 	int history_move(Move move) const;
@@ -90,15 +90,14 @@ private:
 	int ply_ = 0;
 	int hisPly_ = 0;
 
-	Undo history_[MAXGAMELENGTH];
+	Undo history_[MAX_GAMELENGTH];
 	Square kingSq_[2];
 	PieceType pieces_[64];
-
-	Move pvArray_[MAXDEPTH];
+	Move pvArray_[MAX_DEPTH];
 
 	// Move ordering, non captures
 	int historyMoves_[2][SQUARE_CNT][SQUARE_CNT]; // [color][sq][sq]
-	int killerMoves_[2][MAXDEPTH]; // [killercount == 2][ply]
+	int killerMoves_[2][MAX_DEPTH]; // [killercount == 2][ply]
 };
 
 inline Color Position::side_to_move() const {
@@ -182,7 +181,7 @@ inline void Position::killer_move_set(int move) {
 }
 
 inline void Position::killer_moves_reset() {
-	for (int ply = 0; ply < MAXDEPTH; ++ply) {
+	for (int ply = 0; ply < MAX_DEPTH; ++ply) {
 		killerMoves_[0][ply] = MOVE_NONE;
 		killerMoves_[1][ply] = MOVE_NONE;
 	}

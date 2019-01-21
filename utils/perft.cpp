@@ -13,13 +13,13 @@ namespace Perft {
 			return;
 		}
 
-		Movelist list[1];
-		list->count = 0;
+		Movelist list = Movelist();
+		list.count = 0;
 		Movegen::get_moves(pos, list);
 
 		int moveNum = 0;
-		for (moveNum = 0; moveNum < list->count; ++moveNum) {
-			Move move = list->moves[moveNum].move;
+		for (moveNum = 0; moveNum < list.count; ++moveNum) {
+			Move move = list.moves[moveNum].move;
 			
 			if (!pos.do_move(move))
 				continue;
@@ -33,15 +33,15 @@ namespace Perft {
 	unsigned long long perft_begin(Position& pos, int depth, bool print) {
 		std::clock_t start = std::clock();
 		unsigned long long leafNodes = 0;
-		Movelist list[1];
+		Movelist list = Movelist();
 		depth = depth <= 0 ? 1 : depth;
 
-		list->count = 0;
+		list.count = 0;
 		Movegen::get_moves(pos, list);
 
 		Move move;
-		for (int moveNum = 0; moveNum < list->count; ++moveNum) {
-			move = list->moves[moveNum].move;
+		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
+			move = list.moves[moveNum].move;
 
 			if (!pos.do_move(move))
 				continue;

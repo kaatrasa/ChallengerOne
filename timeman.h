@@ -9,10 +9,10 @@ namespace Timeman {
 		return GetTickCount();
 	}
 
-	inline void check_time_up(SearchInfo *info) {
-		if ((info->nodes & 2047) == 0) {
-			if (info->timeSet == true && Timeman::get_time() > info->stopTime) {
-				info->stopped = true;
+	inline void check_time_up(SearchInfo& info) {
+		if ((info.nodes & 2047) == 0) {
+			if (info.timeSet == true && Timeman::get_time() > info.stopTime) {
+				info.stopped = true;
 			}
 		}
 	}

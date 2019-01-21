@@ -16,32 +16,32 @@ namespace Movegen {
 		}
 	}
 
-	static void add_quiet_move(const Position& pos, Movelist *list, Move move) {
-		list->moves[list->count].move = move;
+	static void add_quiet_move(const Position& pos, Movelist& list, Move move) {
+		list.moves[list.count].move = move;
 
 		if (move == pos.killer_move1())
-			list->moves[list->count].score = 900000;
+			list.moves[list.count].score = 900000;
 		else if (move == pos.killer_move2())
-			list->moves[list->count].score = 800000;
+			list.moves[list.count].score = 800000;
 		else
-			list->moves[list->count].score = pos.history_move(move);
+			list.moves[list.count].score = pos.history_move(move);
 
-		list->count++;
+		list.count++;
 	}
 
-	static void add_capture_move(const Position& pos, Movelist *list, Move move) {
-		list->moves[list->count].move = move;
-		list->moves[list->count].score = mvvLVaScores[pos.piece_on_sq(to_sq(move))][pos.piece_on_sq(from_sq(move))] + 1000000;
-		list->count++;
+	static void add_capture_move(const Position& pos, Movelist& list, Move move) {
+		list.moves[list.count].move = move;
+		list.moves[list.count].score = mvvLVaScores[pos.piece_on_sq(to_sq(move))][pos.piece_on_sq(from_sq(move))] + 1000000;
+		list.count++;
 	}
 
-	static void add_en_passant_move(const Position& pos, Movelist *list, Move move) {
-		list->moves[list->count].move = move;
-		list->moves[list->count].score = 105 + 1000000;
-		list->count++;
+	static void add_en_passant_move(const Position& pos, Movelist& list, Move move) {
+		list.moves[list.count].move = move;
+		list.moves[list.count].score = 105 + 1000000;
+		list.count++;
 	}
 
-	void add_piece_moves(Position& pos, Movelist* list, Square from) {
+	void add_piece_moves(Position& pos, Movelist& list, Square from) {
 		Color color = pos.side_to_move();
 		PieceType movingPt = pos.piece_on_sq(from);
 		Bitboard moves = pos.attacks_from(movingPt, from) & (~OccupiedBB[color][ANY_PIECE]);
@@ -58,7 +58,7 @@ namespace Movegen {
 		}
 	}
 
-	void add_castling_moves(Position& pos, Movelist* list) {
+	void add_castling_moves(Position& pos, Movelist& list) {
 		if (pos.side_to_move() == WHITE) {
 			if (pos.can_castle(WKCA)) {
 				if ((pos.piece_on_sq(SQ_F1) == NO_PIECE) && (pos.piece_on_sq(SQ_G1) == NO_PIECE)) {
@@ -103,7 +103,7 @@ namespace Movegen {
 		}
 	}
 
-	void add_pawn_moves(Position& pos, Movelist* list, Square from) {
+	void add_pawn_moves(Position& pos, Movelist& list, Square from) {
 		unsigned int rank = from >> 3;
 		Color color = pos.side_to_move();
 		Bitboard captures = pos.attacks_from<PAWN>(from, color) & OccupiedBB[color ^ 1][ANY_PIECE];
@@ -244,33 +244,21 @@ namespace Movegen {
 		}
 	}
 
-	void get_moves(Position& pos, Movelist* list) {
+	void get_moves(Position& pos, Movelist& list) {
 		Color color = pos.side_to_move();
 		Bitboard pawns = OccupiedBB[color][PAWN];
 		Bitboard pieces = OccupiedBB[color][ANY_PIECE] ^ pawns;
 
-		while (pawns) {
-			unsigned long sq;
-			_BitScanForward64(&sq, pawns);
-			clear_bit(pawns, Square(sq));
+		while (pawns)
+			add_pawn_moves(pos, list, pop_lsb(pawns));
 
-			add_pawn_moves(pos, list, (Square)sq);
-		}
+		while (pieces) 
+			add_piece_moves(pos, list, pop_lsb(pieces));
 
-		while (pieces) {
-			unsigned long sq;
-			_BitScanForward64(&sq, pieces);
-			clear_bit(pieces, Square(sq));
-			
-			add_piece_moves(pos, list, (Square)sq);
-		}
-
-		if (pos.castling_rights()) {
-			add_castling_moves(pos, list);
-		}
+		if (pos.castling_rights()) add_castling_moves(pos, list);
 	}
 
-	void add_captures(Position& pos, Movelist* list, Square from) {
+	void add_captures(Position& pos, Movelist& list, Square from) {
 		Bitboard captures = 0;
 		Color color = pos.side_to_move();
 		Color enemyColor = color == WHITE ? BLACK : WHITE;
@@ -291,16 +279,11 @@ namespace Movegen {
 		}
 	}
 	
-	void get_captures(Position& pos, Movelist* list) {
+	void get_captures(Position& pos, Movelist& list) {
 		int color = pos.side_to_move();
 		Bitboard allpieces = OccupiedBB[color][ANY_PIECE];
 
-		while (allpieces) {
-			unsigned long sq;
-			_BitScanForward64(&sq, allpieces);
-			clear_bit(allpieces, Square(sq));
-
-			add_captures(pos, list, (Square)sq);
-		}
+		while (allpieces)
+			add_captures(pos, list, pop_lsb(allpieces));
 	}
 }
