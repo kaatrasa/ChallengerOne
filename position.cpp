@@ -362,7 +362,7 @@ bool Position::do_move(const Move move) {
 	}
 
 	// Hash out current en pas square
-	if (enPassant_) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
+	if (enPassant_ != SQ_NONE) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
 	// Hash out current castling rights
 	posKey_ ^= Zobrist::castling[castlingRights_];
 
@@ -433,14 +433,14 @@ void Position::undo_move() {
 	PieceType capt = captured(move);
 	PieceType prom = promoted(move);
 
-	if (enPassant_) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
+	if (enPassant_ != SQ_NONE) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
 	posKey_ ^= Zobrist::castling[castlingRights_];
 
 	castlingRights_ = history_[hisPly_].castlePerm;
 	fiftyMove_ = history_[hisPly_].fiftyMove;
 	enPassant_ = history_[hisPly_].enPas;
 
-	if (enPassant_) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
+	if (enPassant_ != SQ_NONE) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
 	posKey_ ^= Zobrist::castling[castlingRights_];
 
 	sideToMove_ = sideToMove_ == WHITE ? BLACK : WHITE;
@@ -478,6 +478,17 @@ void Position::undo_move() {
 		clear_piece(from, sideToMove_);
 		add_piece(from, PAWN, sideToMove_);
 	}
+}
+
+void Position::do_null_move() {
+	++ply_;
+	history_[hisPly_].posKey = posKey_;
+
+	if (enPassant_ != SQ_NONE);
+}
+
+void Position::undo_null_move() {
+
 }
 
 void Position::clear_piece(const Square sq, const int pieceColor) {
