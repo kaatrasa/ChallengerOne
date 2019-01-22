@@ -5,6 +5,7 @@ Magic Bitboards implemented using PEXT(BMI2).
 
 Search
 Alpha-beta pruning with iterative deepening and quiescence search.
+Aspiration windows.
 Simple transposition table.
 One thread.
 
