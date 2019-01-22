@@ -97,7 +97,7 @@ namespace Search {
 		return alpha;
 	}
 
-	static int search(int alpha, int beta, int depth, Position& pos, SearchInfo& info) {
+	static int search(int alpha, int beta, int depth, Position& pos, SearchInfo& info, bool null_ok) {
 		Timeman::check_time_up(info);
 
 		if (pos.ply() > MAX_DEPTH - 1)
@@ -124,10 +124,20 @@ namespace Search {
 			if (alpha >= beta) return ttEntry->score;
 		}
 
-		if (depth == 0)
-			return quiescence(alpha, beta, pos, info);
+		Color us = pos.side_to_move();
+		bool in_check = pos.attackers_to(pos.king_sq()) & OccupiedBB[~us][ANY_PIECE];
 
-		info.nodes++;
+		if (in_check) ++depth;
+		if (depth == 0) return quiescence(alpha, beta, pos, info);
+
+		// Null move pruning
+		if (null_ok && !in_check && pos.ply() && pos.non_pawn_material(us) && depth >= 4) {
+			pos.do_null_move();
+			int score = -search(-beta, -beta + 1, depth - 4, pos, info, false);
+			pos.undo_null_move();
+			
+			if (score >= beta) return beta;
+		}
 
 		Movelist list = Movelist();
 		Movegen::get_moves(pos, list);
@@ -157,7 +167,7 @@ namespace Search {
 			legal++;
 
 			// Evaluate the move
-			int childScore = -search(-beta, -alpha, depth - 1, pos, info);
+			int childScore = -search(-beta, -alpha, depth - 1, pos, info, true);
 			pos.undo_move();
 
 			if (info.stopped)
@@ -191,11 +201,13 @@ namespace Search {
 			}
 		}
 
+		info.nodes++;
+
 		if (legal == 0) {
-			if (pos.attackers_to(pos.king_sq()) & OccupiedBB[pos.side_to_move() ^ 1][ANY_PIECE])
-				return -MATE_SCORE + pos.ply(); // checkmate in ply moves
+			if (in_check)
+				return -MATE_SCORE + pos.ply();
 			else
-				return 0; // stalemate
+				return 0;
 		}
 
 		if (score <= alphaOrig)
@@ -220,7 +232,7 @@ namespace Search {
 		clear_for_search(pos, info);
 
 		while (currentDepth <= info.depth) {
-			eval = search(alpha, beta, currentDepth, pos, info);
+			eval = search(alpha, beta, currentDepth, pos, info, false);
 			
 			// Aspiration windows
 			if (eval >= beta) {

@@ -21,6 +21,8 @@ public:
 
 	bool do_move(const Move move);
 	void undo_move();
+	void do_null_move();
+	void undo_null_move();
 
 	Key pos_key() const;
 	Color side_to_move() const;
@@ -31,6 +33,7 @@ public:
 	Square king_sq() const;
 	Square king_sq(Color side) const;
 	PieceType piece_on_sq(int sq) const;
+	Bitboard non_pawn_material(Color side);
 
 	int ply() const;
 	void ply_reset();
@@ -130,6 +133,10 @@ inline Square Position::king_sq() const {
 
 inline PieceType Position::piece_on_sq(int sq) const {
 	return pieces_[sq];
+}
+
+inline Bitboard Position::non_pawn_material(Color side) {
+	return OccupiedBB[side][ANY_PIECE] ^ OccupiedBB[side][PAWN];
 }
 
 inline int Position::ply() const {

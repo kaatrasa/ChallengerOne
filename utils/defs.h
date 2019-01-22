@@ -131,6 +131,10 @@ inline Square& operator-=(Square& s, Direction d) { return s = s - d; }
 
 inline CastlingRight& operator &=(CastlingRight& r, int p) { return r = CastlingRight(r & p);  };
 
+constexpr Color operator~(Color c) {
+	return Color(c ^ BLACK); // Toggle color
+}
+
 #define ENABLE_BASE_OPERATORS_ON(T)                                \
 constexpr T operator+(T d1, T d2) { return T(int(d1) + int(d2)); } \
 constexpr T operator-(T d1, T d2) { return T(int(d1) - int(d2)); } \

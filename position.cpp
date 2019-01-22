@@ -325,7 +325,7 @@ void Position::calculate_pos_key() {
 		else if (((OccupiedBB[WHITE][KING] >> sq) & 1) == 1) posKey_ ^= Zobrist::psq[WHITE][KING][sq];
 		else if (((OccupiedBB[BLACK][KING] >> sq) & 1) == 1) posKey_ ^= Zobrist::psq[BLACK][KING][sq];
 
-	if (enPassant_)
+	if (enPassant_ != SQ_NONE)
 		posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
 	
 	posKey_ ^= Zobrist::castling[castlingRights_];
@@ -484,11 +484,32 @@ void Position::do_null_move() {
 	++ply_;
 	history_[hisPly_].posKey = posKey_;
 
-	if (enPassant_ != SQ_NONE);
+	if (enPassant_ != SQ_NONE) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
+
+	history_[hisPly_].move = MOVE_NONE;
+	history_[hisPly_].fiftyMove = fiftyMove_;
+	history_[hisPly_].enPas = enPassant_;
+	history_[hisPly_].castlePerm = castlingRights_;
+	enPassant_ = SQ_NONE;
+
+	sideToMove_ = sideToMove_ == WHITE ? BLACK : WHITE;
+	++hisPly_;
+	posKey_ ^= Zobrist::side;
 }
 
 void Position::undo_null_move() {
+	--hisPly_;
+	--ply_;
 
+	if (enPassant_ != SQ_NONE) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
+
+	castlingRights_ = history_[hisPly_].castlePerm;
+	fiftyMove_ = history_[hisPly_].fiftyMove;
+	enPassant_ = history_[hisPly_].enPas;
+
+	if (enPassant_ != SQ_NONE) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
+	sideToMove_ = sideToMove_ == WHITE ? BLACK : WHITE;
+	posKey_ ^= Zobrist::side;
 }
 
 void Position::clear_piece(const Square sq, const int pieceColor) {
