@@ -209,28 +209,45 @@ namespace Search {
 	}
 	
 	void start(Position& pos, SearchInfo& info) {
-		int bestScore = -INF;
 		Move bestMove = MOVE_NONE;
+		int alpha = -INF;
+		int beta = INF;
+		int eval = -INF;
 		int pvmNum = 0;
 		int currentDepth = 1;
+		const int windowSize = 30;
 		clear_for_search(pos, info);
 
 		while (currentDepth <= info.depth) {
-			bestScore = search(-INF, INF, currentDepth, pos, info);
+			eval = search(alpha, beta, currentDepth, pos, info);
 			
-			if (abs(bestScore) >= MATE_SCORE - MAX_DEPTH) {
-				if (bestScore >= 0)
-					bestScore = (MATE_SCORE - bestScore) / 2 + ((MATE_SCORE - bestScore) % 2 != 0);
-				else
-					bestScore = (-MATE_SCORE - bestScore) / 2;
+			if (eval >= beta) {
+				// Fail high
+				beta += 3 * windowSize;
+				continue;
+			}
+			else if (eval <= alpha) {
+				// Fail low
+				alpha -= 3 * windowSize;
+				continue;
+			}
 
-				std::cout << "info score mate " << bestScore << " depth " << currentDepth << " nodes " << info.nodes << " time " << Timeman::get_time() - info.startTime << " ";
+			if (abs(eval) >= MATE_SCORE - MAX_DEPTH) {
+				if (eval >= 0)
+					eval = (MATE_SCORE - eval) / 2 + ((MATE_SCORE - eval) % 2 != 0);
+				else
+					eval = (-MATE_SCORE - eval) / 2;
+
+				std::cout << "info score mate " << eval << " depth " << currentDepth << " nodes " << info.nodes << " time " << Timeman::get_time() - info.startTime << " ";
 			} else
-				std::cout << "info score cp " << bestScore << " depth " << currentDepth << " nodes " << info.nodes << " time " << Timeman::get_time() - info.startTime << " ";
+				std::cout << "info score cp " << eval << " depth " << currentDepth << " nodes " << info.nodes << " time " << Timeman::get_time() - info.startTime << " ";
 
 			pos.print_pv(info, currentDepth);
 			bestMove = pos.best_move();
 			++currentDepth;
+
+			alpha = eval - windowSize;
+			beta = eval + windowSize;
 
 			if (info.stopped) break;
 		}
