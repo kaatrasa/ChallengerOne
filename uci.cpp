@@ -7,6 +7,7 @@
 #include <Windows.h>
 
 #include "uci.h"
+#include "tt.h"
 #include "timeman.h"
 #include "search.h"
 #include "bitboard.h"
@@ -161,6 +162,15 @@ namespace UCI{
 		pos.ply_reset();
 	}
 
+	void ucinewgame(Position& pos, SearchInfo& info) {
+		info = SearchInfo();
+		pos = Position();
+		info.quit = false;
+		info.stopped = false;
+		pos.set(StartFEN);
+		TT.clear();
+	}
+
 	void stop(SearchInfo& info) {
 		info.stopped = true;
 		if (SearchThread.joinable()) SearchThread.join();
@@ -198,6 +208,7 @@ namespace UCI{
 			else if (token == "isready") cout << "readyok" << endl;
 			else if (token == "go") go(pos, info, is);
 			else if (token == "position") position(pos, is);
+			else if (token == "ucinewgame") ucinewgame(pos, info);
 			else if (token == "print") pos.print();
 		}
 	}

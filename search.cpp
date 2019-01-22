@@ -42,7 +42,6 @@ namespace Search {
 
 	static int quiescence(int alpha, int beta, Position& pos, SearchInfo& info) {
 		Timeman::check_time_up(info);
-		
 		info.nodes++;
 
 		if (pos.is_repetition() || pos.fifty_move() >= 100) return 0;
@@ -114,8 +113,10 @@ namespace Search {
 		if (found && ttEntry->depth >= depth) {
 			pvMove = ttEntry->move;
 
-			if (ttEntry->flag == EXACT)
+			if (ttEntry->flag == EXACT) {
+				info.nodes++;
 				return ttEntry->score;
+			}
 			else if (ttEntry->flag == LOWERBOUND)
 				alpha = std::max(alpha, ttEntry->score);
 			else if (ttEntry->flag == UPPERBOUND)
@@ -129,6 +130,7 @@ namespace Search {
 
 		if (in_check) ++depth;
 		if (depth == 0) return quiescence(alpha, beta, pos, info);
+		info.nodes++;
 
 		// Null move pruning
 		if (null_ok && !in_check && pos.ply() && pos.non_pawn_material(us) && depth >= 4) {
@@ -201,8 +203,6 @@ namespace Search {
 			}
 		}
 
-		info.nodes++;
-
 		if (legal == 0) {
 			if (in_check)
 				return -MATE_SCORE + pos.ply();
@@ -233,7 +233,8 @@ namespace Search {
 
 		while (currentDepth <= info.depth) {
 			eval = search(alpha, beta, currentDepth, pos, info, false);
-			
+			if (info.stopped) break;
+
 			// Aspiration windows
 			if (eval >= beta) {
 				beta += windowSize * (2 << failCount);
@@ -262,8 +263,6 @@ namespace Search {
 			alpha = eval - windowSize;
 			beta = eval + windowSize;
 			failCount = 0;
-
-			if (info.stopped) break;
 		}
 
 		info.stopped = true;
