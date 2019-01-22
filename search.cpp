@@ -216,19 +216,20 @@ namespace Search {
 		int pvmNum = 0;
 		int currentDepth = 1;
 		const int windowSize = 30;
+		int failCount = 0;
 		clear_for_search(pos, info);
 
 		while (currentDepth <= info.depth) {
 			eval = search(alpha, beta, currentDepth, pos, info);
 			
+			// Aspiration windows
 			if (eval >= beta) {
-				// Fail high
-				beta += 3 * windowSize;
+				beta += windowSize * (2 << failCount);
+				++failCount;
 				continue;
-			}
-			else if (eval <= alpha) {
-				// Fail low
-				alpha -= 3 * windowSize;
+			} else if (eval <= alpha) {
+				alpha -= windowSize * (2 << failCount);
+				++failCount;
 				continue;
 			}
 
@@ -248,6 +249,7 @@ namespace Search {
 
 			alpha = eval - windowSize;
 			beta = eval + windowSize;
+			failCount = 0;
 
 			if (info.stopped) break;
 		}
