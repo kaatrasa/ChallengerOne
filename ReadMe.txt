@@ -7,6 +7,7 @@ Search
 Alpha-beta pruning with iterative deepening and quiescence search.
 Aspiration windows.
 Null move pruning.
+Late move reductions.
 Simple transposition table.
 One thread.
 
