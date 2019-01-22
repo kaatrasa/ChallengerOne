@@ -136,7 +136,7 @@ inline PieceType Position::piece_on_sq(int sq) const {
 }
 
 inline Bitboard Position::non_pawn_material(Color side) {
-	return OccupiedBB[side][ANY_PIECE] ^ OccupiedBB[side][PAWN];
+	return OccupiedBB[side][ANY_PIECE] ^ OccupiedBB[side][PAWN] ^ OccupiedBB[side][KING];
 }
 
 inline int Position::ply() const {
