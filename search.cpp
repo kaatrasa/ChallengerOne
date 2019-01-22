@@ -154,22 +154,30 @@ namespace Search {
 			}
 		}
 
-		Move bestMove = MOVE_NONE;
+		Move bestMove = MOVE_NONE, move = MOVE_NONE;
 		int score = -INF;
 		int legal = 0;
 
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
-			// Move ordering
 			pick_move(moveNum, list);
-			
-			// Try to move
-			if (!pos.do_move(list.moves[moveNum].move)) continue;
-			
-			// Move ok
+			move = list.moves[moveNum].move;
+
+			if (!pos.do_move(move)) continue;
 			legal++;
 
+			// LMR
+			bool is_capture = move & FLAGCAP;
+			bool is_promotion = move & FLAGPROM;
+			int childScore;
+			if (moveNum > 4 && (depth > 2) && !in_check && !is_capture && !is_promotion) {
+				childScore = -search(-beta, -alpha, depth - 2, pos, info, true);
+
+				if (childScore > alpha) childScore = -search(-beta, -alpha, depth - 1, pos, info, true);
+			}
+			else {
+				childScore = -search(-beta, -alpha, depth - 1, pos, info, true);
+			}
 			// Evaluate the move
-			int childScore = -search(-beta, -alpha, depth - 1, pos, info, true);
 			pos.undo_move();
 
 			if (info.stopped)
@@ -178,7 +186,7 @@ namespace Search {
 			// New best move
 			if (childScore > score) {
 				score = childScore;
-				bestMove = list.moves[moveNum].move;
+				bestMove = move;
 
 				// Alpha cut-off
 				if (score > alpha) {
@@ -191,13 +199,13 @@ namespace Search {
 						if (legal == 1) info.fhf++;
 						info.fh++;
 
-						if (!(bestMove & FLAGCAP))
+						if (!is_capture)
 							pos.killer_move_set(bestMove);
 
 						break;
 					}
 
-					if (!(bestMove & FLAGCAP))
+					if (!is_capture)
 						pos.history_move_set(bestMove, depth*depth);
 				}
 			}
