@@ -24,11 +24,13 @@ void TranspositionTable::clear() {
 void TranspositionTable::save(Key posKey, const Move move, int score, TTFlag flag, const int depth) {
 	unsigned long long index = posKey % entryCount_;
 
-	table_[index].move = move;
-	table_[index].posKey = posKey;
-	table_[index].flag = flag;
-	table_[index].depth = depth;
-	table_[index].score = score;
+	if (depth >= table_[index].depth) {
+		table_[index].move = move;
+		table_[index].posKey = posKey;
+		table_[index].flag = flag;
+		table_[index].depth = depth;
+		table_[index].score = score;
+	}
 }
 
 TTEntry* TranspositionTable::probe(Key key, bool& found) const {
