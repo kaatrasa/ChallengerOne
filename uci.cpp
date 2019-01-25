@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <thread>
 #include <memory>
-#include <Windows.h>
 
 #include "uci.h"
 #include "tt.h"
