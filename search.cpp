@@ -1,4 +1,5 @@
 ﻿#include <algorithm>
+#include <cmath>
 #include <iostream>
 
 #include "search.h"
@@ -60,7 +61,6 @@ namespace Search {
 
 		int legal = 0;
 		int oldAlpha = alpha;
-		int bestMove = MOVE_NONE;
 	    score = -INF;
 
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
@@ -76,27 +76,18 @@ namespace Search {
 				return 0;
 			}
 
-			// Best move for maximizing player
 			if (score > alpha) {
-				// Bad move for minimizing player
-				if (score >= beta) {
-
-					// if we searched best move first
-					if (legal == 1) info.fhf++;
-
-					info.fh++;
+				if (score >= beta)
 					return beta;
-				}
 
 				alpha = score;
-				bestMove = list.moves[moveNum].move;
 			}
 		}
 
 		return alpha;
 	}
 
-	static int search(int alpha, int beta, int depth, Position& pos, SearchInfo& info, bool null_ok) {
+	static int search(int alpha, int beta, int depth, Position& pos, SearchInfo& info, bool nullOk) {
 		Timeman::check_time_up(info);
 
 		if (pos.ply() > MAX_DEPTH - 1)
@@ -109,6 +100,7 @@ namespace Search {
 		Move pvMove = MOVE_NONE;
 		bool found;
 
+		// Check for position in TT
 		TTEntry* ttEntry = TT.probe(pos.pos_key(), found);
 		if (found && ttEntry->depth >= depth) {
 			pvMove = ttEntry->move;
@@ -126,19 +118,25 @@ namespace Search {
 		}
 
 		Color us = pos.side_to_move();
-		bool in_check = pos.attackers_to(pos.king_sq()) & OccupiedBB[~us][ANY_PIECE];
+		bool inCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[~us][ANY_PIECE];
 
-		if (in_check) ++depth;
+		if (inCheck) ++depth;
 		if (depth == 0) return quiescence(alpha, beta, pos, info);
 		info.nodes++;
 
 		// Null move pruning
-		if (null_ok && !in_check && pos.ply() && pos.non_pawn_material(us) && depth >= 4) {
+		if (nullOk 
+			&& depth >= 4
+			&& !inCheck
+			&& pos.ply() 
+			&& pos.non_pawn_material(us)) 
+		{
 			pos.do_null_move();
 			int score = -search(-beta, -beta + 1, depth - 4, pos, info, false);
 			pos.undo_null_move();
 			
-			if (score >= beta) return beta;
+			if (score >= beta) 
+				return beta;
 		}
 
 		Movelist list = Movelist();
@@ -157,27 +155,58 @@ namespace Search {
 		Move bestMove = MOVE_NONE, move = MOVE_NONE;
 		int score = -INF;
 		int legal = 0;
+		int staticEval;
+
+		if (depth == 1)
+			staticEval = abs(Evaluation::evaluate(pos));
 
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
+			bool searchFullDepth = true;
+			int childScore;
+
 			pick_move(moveNum, list);
 			move = list.moves[moveNum].move;
 
-			if (!pos.do_move(move)) continue;
+			if (!pos.do_move(move)) 
+				continue;
+
+			bool isCapture = move & FLAGCAP;
+			bool isPromotion = move & FLAGPROM;
+			bool gaveCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[us][ANY_PIECE];
+
 			legal++;
-
-			// LMR
-			bool is_capture = move & FLAGCAP;
-			bool is_promotion = move & FLAGPROM;
-			int childScore;
-			if (moveNum > 4 && (depth > 2) && !in_check && !is_capture && !is_promotion) {
-				childScore = -search(-beta, -alpha, depth - 2, pos, info, true);
-
-				if (childScore > alpha) childScore = -search(-beta, -alpha, depth - 1, pos, info, true);
+			
+			// Futility pruning: frontier
+			if (depth == 1
+				&& !inCheck
+				&& !isCapture
+				&& !isPromotion
+				&& !gaveCheck)
+			{
+				if (staticEval + 400 <= alpha
+					&& staticEval + MAX_DEPTH < MATE_SCORE) // Do not return unproven wins
+				{
+					pos.undo_move();
+					continue;
+				}
 			}
-			else {
+
+			// Late move reductions
+			if (moveNum > 4 
+				&& depth > 2
+				&& !inCheck
+				&& !isCapture 
+				&& !isPromotion
+				&& !gaveCheck) 
+			{
+				int reducedDepth = moveNum <= 6 ? 2 : depth / 3 + 1;
+				childScore = -search(-beta, -alpha, depth - reducedDepth, pos, info, true);
+				if (childScore <= alpha) searchFullDepth = false;
+			}
+
+			if (searchFullDepth)
 				childScore = -search(-beta, -alpha, depth - 1, pos, info, true);
-			}
-			// Evaluate the move
+
 			pos.undo_move();
 
 			if (info.stopped)
@@ -188,31 +217,25 @@ namespace Search {
 				score = childScore;
 				bestMove = move;
 
-				// Alpha cut-off
+				// Good move for maximizing player
 				if (score > alpha) {
 					alpha = score;
 
-					// Beta cut-off
+					// Too good, beta cut-off
 					if (alpha >= beta) {
-
-						// Stats..
-						if (legal == 1) info.fhf++;
-						info.fh++;
-
-						if (!is_capture)
+						if (!isCapture)
 							pos.killer_move_set(bestMove);
-
 						break;
 					}
 
-					if (!is_capture)
+					if (!isCapture)
 						pos.history_move_set(bestMove, depth*depth);
 				}
 			}
 		}
 
 		if (legal == 0) {
-			if (in_check)
+			if (inCheck)
 				return -MATE_SCORE + pos.ply();
 			else
 				return 0;
@@ -235,7 +258,7 @@ namespace Search {
 		int eval = -INF;
 		int pvmNum = 0;
 		int currentDepth = 1;
-		const int windowSize = 30;
+		const int windowSize = 5;
 		int failCount = 0;
 		clear_for_search(pos, info);
 
