@@ -2,7 +2,6 @@
 
 #include <intrin.h>
 
-
 #define NOMINMAX
 
 typedef unsigned long long Bitboard;
