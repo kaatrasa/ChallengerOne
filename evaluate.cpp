@@ -1,7 +1,4 @@
-#include <intrin.h>
-
 #include "evaluate.h"
-#include "bitboard.h"
 
 namespace Evaluation {
 	
@@ -61,8 +58,8 @@ namespace Evaluation {
 	};
 
 	int evaluate(const Position& pos) {
-		if (_mm_popcnt_u64(OccupiedBB[WHITE][KING]) == 0) return -MATE_SCORE;
-		if (_mm_popcnt_u64(OccupiedBB[BLACK][KING]) == 0) return MATE_SCORE;
+		if (popcount(OccupiedBB[WHITE][KING]) == 0) return -MATE_SCORE;
+		if (popcount(OccupiedBB[BLACK][KING]) == 0) return MATE_SCORE;
 		
 		int score = 0;
 		unsigned long sq = 0;
@@ -76,31 +73,31 @@ namespace Evaluation {
 		Bitboard occ = OccupiedBB[BOTH][ANY_PIECE];
 
 		while (wPawns)
-			score += PawnTable[pop_lsb(wPawns)] + PVAL;
+			score += PawnTable[pop_lsb(&wPawns)] + PVAL;
 
 		while (bPawns)
-			score -= (PawnTable[Mirror64[pop_lsb(bPawns)]] + PVAL);
+			score -= (PawnTable[Mirror64[pop_lsb(&bPawns)]] + PVAL);
 
 		while (wKnights)
-			score += KnightTable[pop_lsb(wKnights)] + NVAL;
+			score += KnightTable[pop_lsb(&wKnights)] + NVAL;
 
 		while (bKnights)
-			score -= (KnightTable[Mirror64[pop_lsb(bKnights)]] + NVAL);
+			score -= (KnightTable[Mirror64[pop_lsb(&bKnights)]] + NVAL);
 
 		while (wBishops)
-			score += BishopTable[pop_lsb(wBishops)] + BVAL;
+			score += BishopTable[pop_lsb(&wBishops)] + BVAL;
 
 		while (bBishops)
-			score -= (BishopTable[Mirror64[pop_lsb(bBishops)]] + BVAL);
+			score -= (BishopTable[Mirror64[pop_lsb(&bBishops)]] + BVAL);
 
 		while (wRooks)
-			score += RookTable[pop_lsb(wRooks)] + RVAL;
+			score += RookTable[pop_lsb(&wRooks)] + RVAL;
 		
 		while (bRooks)
-			score -= (RookTable[Mirror64[pop_lsb(bRooks)]] + RVAL);
+			score -= (RookTable[Mirror64[pop_lsb(&bRooks)]] + RVAL);
 
-		score += _mm_popcnt_u64(wQueens) * QVAL;
-		score -= _mm_popcnt_u64(bQueens) * QVAL;
+		score += popcount(wQueens) * QVAL;
+		score -= popcount(bQueens) * QVAL;
 
 		if (pos.side_to_move() == WHITE) return score;
 		else return -score;

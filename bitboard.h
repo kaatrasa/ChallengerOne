@@ -1,6 +1,5 @@
 #pragma once
 
-#include <intrin.h>
 #include <assert.h>
 #include <vector>
 #include "utils/defs.h"
@@ -12,7 +11,7 @@ struct Magic {
 
 	// Compute the attack's index using the 'magic bitboards' approach
 	unsigned index(Bitboard occ) const {
-		return unsigned(_pext_u64(occ, mask));
+		return unsigned(pext(occ, mask));
 	}
 };
 
@@ -42,7 +41,7 @@ constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
 extern Bitboard OccupiedBB[3][7]; // BB[color][piecetype]
-extern Bitboard KnightAttacks[64], KingAttacks[64], PawnAttacksEast[2][64], PawnAttacksWest[2][64]; // [color][sq]
+extern Bitboard KnightAttacks[SQUARE_CNT], KingAttacks[SQUARE_CNT], PawnAttacksEast[2][SQUARE_CNT], PawnAttacksWest[2][SQUARE_CNT]; // [color][sq]
 
 extern int SquareDistance[SQUARE_CNT][SQUARE_CNT];
 extern Bitboard SquareBB[SQUARE_CNT];
@@ -89,15 +88,6 @@ inline void set_bit(Bitboard& b, Square s) {
 
 inline void clear_bit(Bitboard& b, Square s) {
 	b &= ClearMask[s];
-}
-
-inline Square pop_lsb(Bitboard& b) {
-	unsigned long to;
-	_BitScanForward64(&to, b);
-	b = _blsr_u64(b);
-	
-	assert(to >= SQ_A1 && to <= SQ_NONE);
-	return Square(to);
 }
 
 // Overloads of bitwise operators between a Bitboard and a Square for testing

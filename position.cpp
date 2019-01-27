@@ -218,7 +218,7 @@ void Position::add_pawn(Color color, Bitboard pawn) {
 	OccupiedBB[color][ANY_PIECE] |= pawn;
 	OccupiedBB[BOTH][ANY_PIECE] |= pawn;
 
-	pieces_[get_square(pawn)] = PAWN;
+	pieces_[lsb(pawn)] = PAWN;
 }
 
 void Position::add_knight(Color color, Bitboard knight) {
@@ -227,7 +227,7 @@ void Position::add_knight(Color color, Bitboard knight) {
 	OccupiedBB[color][ANY_PIECE] |= knight;
 	OccupiedBB[BOTH][ANY_PIECE] |= knight;
 
-	pieces_[get_square(knight)] = KNIGHT;
+	pieces_[lsb(knight)] = KNIGHT;
 }
 
 void Position::add_bishop(Color color, Bitboard bishop) {
@@ -236,7 +236,7 @@ void Position::add_bishop(Color color, Bitboard bishop) {
 	OccupiedBB[color][ANY_PIECE] |= bishop;
 	OccupiedBB[BOTH][ANY_PIECE] |= bishop;
 
-	pieces_[get_square(bishop)] = BISHOP;
+	pieces_[lsb(bishop)] = BISHOP;
 }
 
 void Position::add_rook(Color color, Bitboard rook) {
@@ -245,7 +245,7 @@ void Position::add_rook(Color color, Bitboard rook) {
 	OccupiedBB[color][ANY_PIECE] |= rook;
 	OccupiedBB[BOTH][ANY_PIECE] |= rook;
 
-	pieces_[get_square(rook)] = ROOK;
+	pieces_[lsb(rook)] = ROOK;
 }
 
 void Position::add_queen(Color color, Bitboard queen) {
@@ -254,7 +254,7 @@ void Position::add_queen(Color color, Bitboard queen) {
 	OccupiedBB[color][ANY_PIECE] |= queen;
 	OccupiedBB[BOTH][ANY_PIECE] |= queen;
 
-	pieces_[get_square(queen)] = QUEEN;
+	pieces_[lsb(queen)] = QUEEN;
 }
 
 void Position::add_king(Color color, Bitboard king) {
@@ -263,8 +263,8 @@ void Position::add_king(Color color, Bitboard king) {
 	OccupiedBB[color][ANY_PIECE] |= king;
 	OccupiedBB[BOTH][ANY_PIECE] |= king;
 
-	kingSq_[color] = get_square(king);
-	pieces_[get_square(king)] = KING;
+	kingSq_[color] = lsb(king);
+	pieces_[kingSq_[color]] = KING;
 }
 
 void Position::clear_pieces() {
@@ -282,12 +282,6 @@ void Position::clear_pieces() {
 	for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
 		pieces_[sq] = NO_PIECE;
 	}
-}
-
-Square Position::get_square(Bitboard sq64) {
-	unsigned long square = 0;
-	_BitScanForward64(&square, sq64);
-	return (Square)square;
 }
 
 Piece Position::piece_at_square(Square sq) const {

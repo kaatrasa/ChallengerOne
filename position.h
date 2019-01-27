@@ -62,7 +62,6 @@ public:
 
 private:
 	Piece piece_at_square(Square sq) const;
-	Square get_square(Bitboard sq64);
 	void calculate_pos_key();
 	
 	int pv(const int depth);
@@ -94,8 +93,8 @@ private:
 	int hisPly_ = 0;
 
 	Undo history_[MAX_GAMELENGTH];
-	Square kingSq_[2];
-	PieceType pieces_[64];
+	Square kingSq_[BOTH];
+	PieceType pieces_[SQUARE_CNT];
 	Move pvArray_[MAX_DEPTH];
 
 	// Move ordering, non captures

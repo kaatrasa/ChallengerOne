@@ -47,7 +47,7 @@ namespace Movegen {
 		Bitboard moves = pos.attacks_from(movingPt, from) & (~OccupiedBB[color][ANY_PIECE]);
 
 		while (moves) {
-			Square to = pop_lsb(moves);
+			Square to = pop_lsb(&moves);
 			PieceType capturedPt = pos.piece_on_sq(to);
 
 			if (capturedPt) {
@@ -113,7 +113,7 @@ namespace Movegen {
 			
 			if (rank == RANK_7) {
 				while (singlePushMoves) {
-					Square to = pop_lsb(singlePushMoves);
+					Square to = pop_lsb(&singlePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, QUEEN, NO_FLAG));
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, ROOK, NO_FLAG));
@@ -122,7 +122,7 @@ namespace Movegen {
 				}
 
 				while (captures) {
-					Square to = pop_lsb(captures);
+					Square to = pop_lsb(&captures);
 					PieceType capturedPiece = pos.piece_on_sq(to);
 
 					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, QUEEN, NO_FLAG));
@@ -135,19 +135,19 @@ namespace Movegen {
 				Bitboard doublePushMoves = double_push_targets_white(SquareBB[from], ~OccupiedBB[BOTH][ANY_PIECE]);
 
 				while (singlePushMoves) {
-					Square to = pop_lsb(singlePushMoves);
+					Square to = pop_lsb(&singlePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
 				}
 
 				while (doublePushMoves) {
-					Square to = pop_lsb(doublePushMoves);
+					Square to = pop_lsb(&doublePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, FLAGPS));
 				}
 
 				while (captures) {
-					Square to = pop_lsb(captures);
+					Square to = pop_lsb(&captures);
 					PieceType capturedPiece = pos.piece_on_sq(to);
 					
 					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
@@ -155,13 +155,13 @@ namespace Movegen {
 
 			} else {
 				while (singlePushMoves) {
-					Square to = pop_lsb(singlePushMoves);
+					Square to = pop_lsb(&singlePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
 				}
 
 				while (captures) {
-					Square to = pop_lsb(captures);
+					Square to = pop_lsb(&captures);
 					PieceType capturedPiece = pos.piece_on_sq(to);
 
 					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
@@ -180,7 +180,7 @@ namespace Movegen {
 
 			if (rank == RANK_2) {
 				while (singlePushMoves) {
-					Square to = pop_lsb(singlePushMoves);
+					Square to = pop_lsb(&singlePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, QUEEN, NO_FLAG));
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, ROOK, NO_FLAG));
@@ -189,7 +189,7 @@ namespace Movegen {
 				}
 
 				while (captures) {
-					Square to = pop_lsb(captures);
+					Square to = pop_lsb(&captures);
 					PieceType capturedPiece = pos.piece_on_sq(to);
 
 					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, QUEEN, NO_FLAG));
@@ -201,19 +201,19 @@ namespace Movegen {
 				Bitboard doublePushMoves = double_push_targets_black(SquareBB[from], ~OccupiedBB[BOTH][ANY_PIECE]);
 
 				while (singlePushMoves) {
-					Square to = pop_lsb(singlePushMoves);
+					Square to = pop_lsb(&singlePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
 				}
 
 				while (doublePushMoves) {
-					Square to = pop_lsb(doublePushMoves);
+					Square to = pop_lsb(&doublePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, FLAGPS));
 				}
 
 				while (captures) {
-					Square to = pop_lsb(captures);
+					Square to = pop_lsb(&captures);
 					PieceType capturedPiece = pos.piece_on_sq(to);
 
 					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
@@ -221,13 +221,13 @@ namespace Movegen {
 			}
 			else {
 				while (singlePushMoves) {
-					Square to = pop_lsb(singlePushMoves);
+					Square to = pop_lsb(&singlePushMoves);
 
 					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
 				}
 
 				while (captures) {
-					Square to = pop_lsb(captures);
+					Square to = pop_lsb(&captures);
 					PieceType capturedPiece = pos.piece_on_sq(to);
 
 					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
@@ -250,10 +250,10 @@ namespace Movegen {
 		Bitboard pieces = OccupiedBB[color][ANY_PIECE] ^ pawns;
 
 		while (pawns)
-			add_pawn_moves(pos, list, pop_lsb(pawns));
+			add_pawn_moves(pos, list, pop_lsb(&pawns));
 
 		while (pieces) 
-			add_piece_moves(pos, list, pop_lsb(pieces));
+			add_piece_moves(pos, list, pop_lsb(&pieces));
 
 		if (pos.castling_rights()) add_castling_moves(pos, list);
 	}
@@ -272,7 +272,7 @@ namespace Movegen {
 		}
 
 		while (captures) {
-			Square to = pop_lsb(captures);
+			Square to = pop_lsb(&captures);
 			PieceType capturedPt = pos.piece_on_sq(to);
 
 			add_capture_move(pos, list, make(from, to, movingPt, capturedPt, NO_PIECE, NO_FLAG));
@@ -284,6 +284,6 @@ namespace Movegen {
 		Bitboard allpieces = OccupiedBB[color][ANY_PIECE];
 
 		while (allpieces)
-			add_captures(pos, list, pop_lsb(allpieces));
+			add_captures(pos, list, pop_lsb(&allpieces));
 	}
 }

@@ -1,8 +1,14 @@
 #pragma once
 
-#include <intrin.h>
+#include <assert.h>
 
+#ifdef _WIN32
 #define NOMINMAX
+#include <intrin.h>
+#include <nmmintrin.h>
+#else
+#include <x86intrin.h>
+#endif
 
 typedef unsigned long long Bitboard;
 typedef unsigned long long Key;
@@ -194,4 +200,40 @@ constexpr PieceType promoted(Move m) {
 
 constexpr Move make(Square f, Square t, PieceType mo, PieceType ca, PieceType pro, MoveFlag fl) {
 	return Move(f | (t << 6) | (mo << 12) | (ca << 15) | (pro << 18) | fl);
+}
+
+#ifdef _WIN64
+
+inline Square lsb(Bitboard b) {
+	assert(b);
+	unsigned long idx;
+	_BitScanForward64(&idx, b);
+	return (Square)idx;
+}
+
+#else  // unix
+inline Square lsb(Bitboard b) {
+	assert(b);
+	unsigned long idx;
+	idx = __builtin_ffsll(b) - 1;
+	return (Square)idx;
+}
+#endif
+
+inline Square pop_lsb(Bitboard* b) {
+	const Square s = lsb(*b);
+	*b &= *b - 1;
+	return s;
+}
+
+inline int popcount(Bitboard b) {
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+	return (int)_mm_popcnt_u64(b);
+#else // Assumed gcc or compatible compiler
+	return __builtin_popcountll(b);
+#endif
+}
+
+inline unsigned int pext(Bitboard b, Bitboard m) {
+	return unsigned(_pext_u64(b, m));
 }
