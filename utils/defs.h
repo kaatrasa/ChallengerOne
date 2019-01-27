@@ -15,12 +15,10 @@ typedef unsigned long long Key;
 
 constexpr int MAX_GAMELENGTH = 256;
 constexpr int MAX_POSITIONMOVES = 256;
-constexpr int MAX_DEPTH = 64;
+constexpr int MAX_PLY = 128;
 constexpr int SQUARE_CNT = 64;
 constexpr int FILE_CNT = 8;
 constexpr int RANK_CNT = 8;
-constexpr int MATE_SCORE = 100000;
-constexpr int INF = 2000000;
 
 enum Color { 
 	WHITE, BLACK, BOTH 
@@ -53,6 +51,33 @@ enum Square : int {
 	SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
 	
 	SQ_NONE
+};
+
+enum Value : int {
+	VALUE_ZERO = 0,
+	VALUE_DRAW = 0,
+	VALUE_KNOWN_WIN = 10000,
+	VALUE_MATE = 32000,
+	VALUE_INFINITE = 32001,
+	VALUE_NONE = 32002,
+
+	VALUE_MATE_IN_MAX_PLY = VALUE_MATE - 2 * MAX_PLY,
+	VALUE_MATED_IN_MAX_PLY = -VALUE_MATE + 2 * MAX_PLY,
+
+	PawnValueMg = 136, PawnValueEg = 208,
+	KnightValueMg = 782, KnightValueEg = 865,
+	BishopValueMg = 830, BishopValueEg = 918,
+	RookValueMg = 1289, RookValueEg = 1378,
+	QueenValueMg = 2529, QueenValueEg = 2687,
+
+	MidgameLimit = 15258, EndgameLimit = 3915
+};
+
+enum Depth : int {
+	ONE_PLY = 1,
+
+	DEPTH_ZERO = 0 * ONE_PLY,
+	DEPTH_MAX = MAX_PLY * ONE_PLY
 };
 
 enum Move : int {
@@ -134,6 +159,12 @@ constexpr Square operator-(Square s, Direction d) { return Square(int(s) - int(d
 inline Square& operator+=(Square& s, Direction d) { return s = s + d; }
 inline Square& operator-=(Square& s, Direction d) { return s = s - d; }
 
+// Additional operators to add integers to a Value
+constexpr Value operator+(Value v, int i) { return Value(int(v) + i); }
+constexpr Value operator-(Value v, int i) { return Value(int(v) - i); }
+inline Value& operator+=(Value& v, int i) { return v = v + i; }
+inline Value& operator-=(Value& v, int i) { return v = v - i; }
+
 inline CastlingRight& operator &=(CastlingRight& r, int p) { return r = CastlingRight(r & p);  };
 
 constexpr Color operator~(Color c) {
@@ -161,7 +192,10 @@ constexpr int operator/(T d1, T d2) { return int(d1) / int(d2); }  \
 inline T& operator*=(T& d, int i) { return d = T(int(d) * i); }    \
 inline T& operator/=(T& d, int i) { return d = T(int(d) / i); }
 
+ENABLE_FULL_OPERATORS_ON(Value)
+ENABLE_FULL_OPERATORS_ON(Depth)
 ENABLE_FULL_OPERATORS_ON(Direction)
+
 ENABLE_INCR_OPERATORS_ON(PieceType)
 ENABLE_INCR_OPERATORS_ON(Piece)
 ENABLE_INCR_OPERATORS_ON(Color)
@@ -180,6 +214,14 @@ constexpr File file_of(Square s) {
 
 constexpr Rank rank_of(Square s) {
 	return Rank(s >> 3);
+}
+
+constexpr Value mate_in(int ply) {
+	return VALUE_MATE - ply;
+}
+
+constexpr Value mated_in(int ply) {
+	return -VALUE_MATE + ply;
 }
 
 constexpr Square from_sq(Move m) {
@@ -203,7 +245,6 @@ constexpr Move make(Square f, Square t, PieceType mo, PieceType ca, PieceType pr
 }
 
 #ifdef _WIN64
-
 inline Square lsb(Bitboard b) {
 	assert(b);
 	unsigned long idx;

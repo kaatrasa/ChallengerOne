@@ -124,7 +124,7 @@ namespace UCI{
 		}
 
 		if (depth == -1) {
-			info.depth = MAX_DEPTH;
+			info.depth = DEPTH_MAX;
 		}
 
 		cout << "time:" << time << " start:" << info.startTime 

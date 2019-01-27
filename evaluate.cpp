@@ -57,12 +57,11 @@ namespace Evaluation {
 		0	,	1	,	2	,	3	,	4	,	5	,	6	,	7
 	};
 
-	int evaluate(const Position& pos) {
-		if (popcount(OccupiedBB[WHITE][KING]) == 0) return -MATE_SCORE;
-		if (popcount(OccupiedBB[BLACK][KING]) == 0) return MATE_SCORE;
+	Value evaluate(const Position& pos) {
+		if (popcount(OccupiedBB[WHITE][KING]) == 0) return VALUE_MATE;
+		if (popcount(OccupiedBB[BLACK][KING]) == 0) return -VALUE_MATE;
 		
-		int score = 0;
-		unsigned long sq = 0;
+		Value score = VALUE_ZERO;
 
 		Bitboard wPawns = OccupiedBB[WHITE][PAWN], bPawns = OccupiedBB[BLACK][PAWN];
 		Bitboard wKnights = OccupiedBB[WHITE][KNIGHT], bKnights = OccupiedBB[BLACK][KNIGHT];
@@ -99,7 +98,6 @@ namespace Evaluation {
 		score += popcount(wQueens) * QVAL;
 		score -= popcount(bQueens) * QVAL;
 
-		if (pos.side_to_move() == WHITE) return score;
-		else return -score;
+		return (pos.side_to_move() == WHITE ? score : -score);
 	}
 }

@@ -15,13 +15,13 @@ void TranspositionTable::clear() {
 	for (entry = table_; entry < table_ + entryCount_; entry++) {
 		entry->posKey = 0ULL;
 		entry->move = MOVE_NONE;
-		entry->depth = 0;
-		entry->score = 0;
+		entry->depth = DEPTH_ZERO;
+		entry->score = VALUE_ZERO;
 		entry->flag = NO_FLAG_TT;
 	}
 }
 
-void TranspositionTable::save(Key posKey, const Move move, int score, TTFlag flag, const int depth) {
+void TranspositionTable::save(const Key posKey, const Move move, const Value score, const TTFlag flag, const Depth depth) {
 	unsigned long long index = posKey % entryCount_;
 
 	if (depth >= table_[index].depth) {

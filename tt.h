@@ -5,8 +5,8 @@
 
 struct TTEntry {
 	TTFlag flag;
-	int depth;
-	int score;
+	Depth depth;
+	Value score;
 	Move move;
 	Key posKey;
 };
@@ -17,7 +17,7 @@ public:
 	~TranspositionTable() { free(mem_); }
 
 	void clear();
-	void save(Key posKey, const Move move, int score, TTFlag flag, const int depth);
+	void save(const Key posKey, const Move move, const Value score, const TTFlag flag, const Depth depth);
 	TTEntry* probe(Key key, bool& found) const;
 
 private:

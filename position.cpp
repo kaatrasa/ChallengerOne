@@ -109,7 +109,7 @@ Move Position::best_move() {
 	bool found;
 	TTEntry* entry = TT.probe(posKey_, found);
 
-	if (found) return entry->move;
+	if (found && entry->flag == EXACT) return entry->move;
 	return MOVE_NONE;
 }
 
@@ -134,7 +134,7 @@ int Position::pv(const int depth) {
 	return count;
 }
 
-void Position::print_pv(SearchInfo& info, const int depth) {
+void Position::print_pv(SearchInfo& info, const Depth depth) {
 	int pvCount = pv(depth);
 	int pvIndex = 0;
 	std::cout << "pv ";

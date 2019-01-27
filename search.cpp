@@ -1,6 +1,6 @@
 ﻿#include <algorithm>
-#include <cmath>
 #include <iostream>
+#include <cmath>
 
 #include "search.h"
 #include "evaluate.h"
@@ -41,17 +41,18 @@ namespace Search {
 		info.fhf = 0;
 	}
 
-	static int quiescence(int alpha, int beta, Position& pos, SearchInfo& info) {
+	static Value qsearch(Value alpha, Value beta, Position& pos, SearchInfo& info) {
 		Timeman::check_time_up(info);
 		info.nodes++;
 
-		if (pos.is_repetition() || pos.fifty_move() >= 100) return 0;
-		if (pos.ply() > MAX_DEPTH - 1) return Evaluation::evaluate(pos);
+		if (pos.is_repetition() || pos.fifty_move() >= 100) return VALUE_DRAW;
+		if (pos.ply() > DEPTH_MAX - 1) return Evaluation::evaluate(pos);
 
-		int score = Evaluation::evaluate(pos);
+		Value score = Evaluation::evaluate(pos);
 
+		// Stand pat. Return immediately if static value is at least beta
 		if (score >= beta)
-			return beta;
+			return score;
 
 		if (score > alpha)
 			alpha = score;
@@ -60,20 +61,19 @@ namespace Search {
 		Movegen::get_captures(pos, list);
 
 		int legal = 0;
-		int oldAlpha = alpha;
-	    score = -INF;
+		Value oldAlpha = alpha;
+	    score = -VALUE_INFINITE;
 
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
-
 			pick_move(moveNum, list);
 			if (!pos.do_move(list.moves[moveNum].move)) continue;
 
 			legal++;
-			score = -quiescence(-beta, -alpha, pos, info);
+			score = -qsearch(-beta, -alpha, pos, info);
 			pos.undo_move();
 
 			if (info.stopped) {
-				return 0;
+				return VALUE_NONE;
 			}
 
 			if (score > alpha) {
@@ -87,16 +87,16 @@ namespace Search {
 		return alpha;
 	}
 
-	static int search(int alpha, int beta, int depth, Position& pos, SearchInfo& info, bool nullOk) {
+	static Value search(Value alpha, Value beta, Depth depth, Position& pos, SearchInfo& info, bool nullOk) {
 		Timeman::check_time_up(info);
 
-		if (pos.ply() > MAX_DEPTH - 1)
+		if (pos.ply() > DEPTH_MAX - ONE_PLY)
 			return Evaluation::evaluate(pos);
 
 		if (pos.is_repetition() || pos.fifty_move() >= 100)
-			return 0;
+			return VALUE_DRAW;
 
-		int alphaOrig = alpha;
+		Value alphaOrig = alpha;
 		Move pvMove = MOVE_NONE;
 		bool found;
 
@@ -121,7 +121,7 @@ namespace Search {
 		bool inCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[~us][ANY_PIECE];
 
 		if (inCheck) ++depth;
-		if (depth == 0) return quiescence(alpha, beta, pos, info);
+		if (depth == DEPTH_ZERO) return qsearch(alpha, beta, pos, info);
 		info.nodes++;
 
 		// Null move pruning
@@ -132,7 +132,7 @@ namespace Search {
 			&& pos.non_pawn_material(us)) 
 		{
 			pos.do_null_move();
-			int score = -search(-beta, -beta + 1, depth - 4, pos, info, false);
+			Value score = -search(-beta, -beta + 1, depth - 4 * ONE_PLY, pos, info, false);
 			pos.undo_null_move();
 			
 			if (score >= beta) 
@@ -141,7 +141,7 @@ namespace Search {
 
 		Movelist list = Movelist();
 		Movegen::get_moves(pos, list);
-		int bestScore = -INF;
+		Value bestScore = -VALUE_INFINITE;
 		
 		if (pvMove != MOVE_NONE) {
 			for (int moveNum = 0; moveNum < list.count; ++moveNum) {
@@ -153,16 +153,12 @@ namespace Search {
 		}
 
 		Move bestMove = MOVE_NONE, move = MOVE_NONE;
-		int score = -INF;
+		Value score = -VALUE_INFINITE;
 		int legal = 0;
-		int staticEval;
-
-		if (depth == 1)
-			staticEval = abs(Evaluation::evaluate(pos));
 
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
 			bool searchFullDepth = true;
-			int childScore;
+			Value childScore;
 
 			pick_move(moveNum, list);
 			move = list.moves[moveNum].move;
@@ -183,8 +179,10 @@ namespace Search {
 				&& !isPromotion
 				&& !gaveCheck)
 			{
-				if (staticEval + 400 <= alpha
-					&& staticEval + MAX_DEPTH < MATE_SCORE) // Do not return unproven wins
+				Value eval = Value(abs(Evaluation::evaluate(pos)));
+			
+				if (eval + Value(800) <= alpha // Futility margin
+					&& eval < VALUE_KNOWN_WIN) // Do not return unproven wins
 				{
 					pos.undo_move();
 					continue;
@@ -199,18 +197,18 @@ namespace Search {
 				&& !isPromotion
 				&& !gaveCheck) 
 			{
-				int reducedDepth = moveNum <= 6 ? 2 : depth / 3 + 1;
+				Depth reducedDepth = moveNum <= 6 ? 2 * ONE_PLY : depth / 3 + ONE_PLY;
 				childScore = -search(-beta, -alpha, depth - reducedDepth, pos, info, true);
 				if (childScore <= alpha) searchFullDepth = false;
 			}
 
 			if (searchFullDepth)
-				childScore = -search(-beta, -alpha, depth - 1, pos, info, true);
+				childScore = -search(-beta, -alpha, depth - ONE_PLY, pos, info, true);
 
 			pos.undo_move();
 
 			if (info.stopped)
-				return 0;
+				return VALUE_NONE;
 
 			// New best move
 			if (childScore > score) {
@@ -229,16 +227,16 @@ namespace Search {
 					}
 
 					if (!isCapture)
-						pos.history_move_set(bestMove, depth*depth);
+						pos.history_move_set(bestMove, (int) depth*depth);
 				}
 			}
 		}
 
 		if (legal == 0) {
 			if (inCheck)
-				return -MATE_SCORE + pos.ply();
+				return mated_in(pos.ply());
 			else
-				return 0;
+				return VALUE_DRAW;
 		}
 
 		if (score <= alphaOrig)
@@ -250,16 +248,36 @@ namespace Search {
 
 		return score;
 	}
+
+	bool found_mate(Value score, Depth& mateDepth) {
+
+		if (score >= VALUE_MATE_IN_MAX_PLY) {
+			double depth = VALUE_MATE - score;
+			depth /= 2;
+			mateDepth = Depth(int(ceil(depth)));
+		
+			return true;
+		} else if (score <= VALUE_MATED_IN_MAX_PLY) {
+			double depth = -VALUE_MATE - score;
+			depth /= 2;
+			mateDepth = Depth(int(floor(depth)));
+
+			return true;
+		}
+		return false;
+	}
 	
 	void start(Position& pos, SearchInfo& info) {
 		Move bestMove = MOVE_NONE;
-		int alpha = -INF;
-		int beta = INF;
-		int eval = -INF;
+		Value alpha = -VALUE_INFINITE;
+		Value beta = VALUE_INFINITE;
+		Value eval;
+		Depth currentDepth = ONE_PLY;
+		Depth mateDepth;
 		int pvmNum = 0;
-		int currentDepth = 1;
 		const int windowSize = 5;
 		int failCount = 0;
+
 		clear_for_search(pos, info);
 
 		while (currentDepth <= info.depth) {
@@ -277,16 +295,16 @@ namespace Search {
 				continue;
 			}
 
-			if (abs(eval) >= MATE_SCORE - MAX_DEPTH) {
-				if (eval >= 0)
-					eval = (MATE_SCORE - eval) / 2 + ((MATE_SCORE - eval) % 2 != 0);
-				else
-					eval = (-MATE_SCORE - eval) / 2;
-
-				std::cout << "info score mate " << eval << " depth " << currentDepth << " nodes " << info.nodes << " time " << Timeman::get_time() - info.startTime << " ";
-			} else
-				std::cout << "info score cp " << eval << " depth " << currentDepth << " nodes " << info.nodes << " time " << Timeman::get_time() - info.startTime << " ";
-
+			if (found_mate(eval, mateDepth))
+				std::cout << "info score mate " << mateDepth;
+			else
+				std::cout << "info score cp " << eval;
+			
+			std::cout << " depth " << currentDepth
+				      << " nodes " << info.nodes
+				      << " time " << Timeman::get_time() - info.startTime
+				      << " ";
+			
 			pos.print_pv(info, currentDepth);
 			bestMove = pos.best_move();
 			++currentDepth;

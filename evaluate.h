@@ -12,5 +12,5 @@ enum PieceValue : int {
 };
 
 namespace Evaluation {
-	int evaluate(const Position& pos);
+	Value evaluate(const Position& pos);
 }
