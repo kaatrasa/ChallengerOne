@@ -109,7 +109,7 @@ Move Position::best_move() {
 	bool found;
 	TTEntry* entry = TT.probe(posKey_, found);
 
-	if (found && entry->flag == EXACT) return entry->move;
+	if (found) return entry->move;
 	return MOVE_NONE;
 }
 

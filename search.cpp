@@ -96,6 +96,13 @@ namespace Search {
 		if (pos.is_repetition() || pos.fifty_move() >= 100)
 			return VALUE_DRAW;
 
+		// Mate distance pruning. Even if we mate at the next move our
+		// alpha is already bigger because a shorter mate was found
+		alpha = std::max(mated_in(pos.ply()), alpha);
+		beta = std::min(mate_in(pos.ply() + 1), beta);
+		if (alpha >= beta)
+			return alpha;
+
 		Value alphaOrig = alpha;
 		Move pvMove = MOVE_NONE;
 		bool found;
