@@ -269,20 +269,24 @@ void Position::add_king(Color color, Bitboard king) {
 }
 
 void Position::clear_pieces() {
-	for (int color = WHITE; color <= BOTH; ++color) {
-		OccupiedBB[color][PAWN] = 0;
-		OccupiedBB[color][KNIGHT] = 0;
-		OccupiedBB[color][BISHOP] = 0;
-		OccupiedBB[color][ROOK] = 0;
-		OccupiedBB[color][QUEEN] = 0;
-		OccupiedBB[color][KING] = 0;
-		OccupiedBB[color][ANY_PIECE] = 0;
-
+	for (Color c = WHITE; c <= BOTH; ++c) {
+		OccupiedBB[c][PAWN] = 0;
+		OccupiedBB[c][KNIGHT] = 0;
+		OccupiedBB[c][BISHOP] = 0;
+		OccupiedBB[c][ROOK] = 0;
+		OccupiedBB[c][QUEEN] = 0;
+		OccupiedBB[c][KING] = 0;
+		OccupiedBB[c][ANY_PIECE] = 0;
 	}
 
-	for (Square sq = SQ_A1; sq <= SQ_H8; ++sq) {
+	for (Square sq = SQ_A1; sq <= SQ_H8; ++sq)
 		pieces_[sq] = NO_PIECE;
-	}
+
+	for (Phase p = PHASE_MID; p <= PHASE_END; ++p)
+		psq_[p] = VALUE_ZERO;
+
+	for (Color c = WHITE; c <= BLACK; ++c)
+		nonPawnMaterial_[COLOR_NB] = VALUE_ZERO;
 }
 
 Piece Position::piece_at_square(Square sq) const {

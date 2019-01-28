@@ -25,6 +25,7 @@ public:
 	void undo_null_move();
 
 	Key pos_key() const;
+	Value psq_score(Phase p) const;
 	Color side_to_move() const;
 	CastlingRight castling_rights() const;
 	bool can_castle(CastlingRight cr) const;
@@ -97,7 +98,8 @@ private:
 	Square kingSq_[BOTH];
 	PieceType pieces_[SQUARE_NB];
 	Move pvArray_[DEPTH_MAX];
-	Value psq;
+	Value psq_[PHASE_NB];
+	Value nonPawnMaterial_[COLOR_NB];
 
 	// Move ordering, non captures
 	int historyMoves_[2][SQUARE_NB][SQUARE_NB]; // [color][sq][sq]
@@ -159,6 +161,10 @@ inline void Position::his_ply_reset() {
 
 inline Key Position::pos_key() const {
 	return posKey_;
+}
+
+inline Value Position::psq_score(Phase p) const {
+	return psq_[p];
 }
 
 inline int Position::history_move(Move move) const {
