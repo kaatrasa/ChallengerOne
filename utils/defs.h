@@ -28,11 +28,17 @@ enum Piece {
 };
 
 enum PieceType { 
-	NO_PIECE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, ANY_PIECE = 0 
+	NO_PIECE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, 
+	
+	ANY_PIECE = 0,
+	PIECETYPE_NB = 7
 };
 
 enum File : int { 
-	FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB
+	FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB,
+
+	FILE_SEMIOPEN = 0,
+	FILE_OPEN = 1
 };
 
 enum Rank : int { 
@@ -117,6 +123,10 @@ enum Direction : int {
 	NORTH_WEST = NORTH + WEST
 };
 
+enum Phase : int {
+	PHASE_MID, PHASE_END, PHASE_NB
+};
+
 struct Undo {
 	Move move;
 	CastlingRight castlePerm;
@@ -169,6 +179,14 @@ inline CastlingRight& operator &=(CastlingRight& r, int p) { return r = Castling
 
 constexpr Color operator~(Color c) {
 	return Color(c ^ BLACK); // Toggle color
+}
+
+constexpr Square operator~(Square s) {
+	return Square(s ^ SQ_A8); // Vertical flip SQ_A1 -> SQ_A8
+}
+
+constexpr File operator~(File f) {
+	return File(f ^ FILE_H); // Horizontal flip FILE_A -> FILE_H
 }
 
 #define ENABLE_BASE_OPERATORS_ON(T)                                \

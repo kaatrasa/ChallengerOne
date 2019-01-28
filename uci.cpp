@@ -10,15 +10,20 @@
 #include "search.h"
 #include "bitboard.h"
 #include "movegen.h"
+#include "psqt.h"
 #include "utils/perft.h"
 #include "utils/typeconvertions.h"
 
 using namespace std;
 
-void init() {
-	init_bitboards();
+
+void main() {
+	BB::init();
 	Movegen::init_mvvlva();
 	Zobrist::init_keys();
+	PSQT::init();
+	
+	UCI::loop();
 }
 
 Move parse_move(Position& pos, string moveStr) {
@@ -179,7 +184,6 @@ namespace UCI{
 		SearchInfo info = SearchInfo();
 		Position pos = Position();
 
-		init();
 		uci();
 
 		info.quit = false;

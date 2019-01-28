@@ -97,10 +97,12 @@ private:
 	Square kingSq_[BOTH];
 	PieceType pieces_[SQUARE_NB];
 	Move pvArray_[DEPTH_MAX];
+	Value psq;
 
 	// Move ordering, non captures
 	int historyMoves_[2][SQUARE_NB][SQUARE_NB]; // [color][sq][sq]
 	int killerMoves_[2][DEPTH_MAX]; // [killercount == 2][ply]
+
 };
 
 inline Color Position::side_to_move() const {

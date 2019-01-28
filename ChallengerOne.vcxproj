@@ -147,10 +147,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bitboard.cpp" />
-    <ClCompile Include="ChallengerOne.cpp" />
     <ClCompile Include="evaluate.cpp" />
     <ClCompile Include="movegen.cpp" />
     <ClCompile Include="position.cpp" />
+    <ClCompile Include="psqt.cpp" />
     <ClCompile Include="tt.cpp" />
     <ClCompile Include="uci.cpp" />
     <ClCompile Include="search.cpp" />
@@ -163,6 +163,7 @@
     <ClInclude Include="evaluate.h" />
     <ClInclude Include="movegen.h" />
     <ClInclude Include="position.h" />
+    <ClInclude Include="psqt.h" />
     <ClInclude Include="timeman.h" />
     <ClInclude Include="tt.h" />
     <ClInclude Include="uci.h" />

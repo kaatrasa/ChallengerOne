@@ -24,9 +24,6 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ChallengerOne.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="utils\stringoperators.cpp">
       <Filter>Source Files\utils</Filter>
     </ClCompile>
@@ -55,6 +52,9 @@
       <Filter>Source Files\utils</Filter>
     </ClCompile>
     <ClCompile Include="tt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="psqt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -93,6 +93,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="timeman.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="psqt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
