@@ -208,6 +208,7 @@ inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
 }
 
 inline Bitboard Position::attacks_from(PieceType pt, Square s) const {
+	assert(pt != PAWN);
 	return attacks_bb(pt, s, OccupiedBB[BOTH][ANY_PIECE]);
 }
 

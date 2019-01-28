@@ -64,16 +64,18 @@ namespace Perft {
 
 	void perft_auto(Position& pos, int maxDepth) {
 		maxDepth = maxDepth <= 0 ? 6 : maxDepth;
-		std::string fens[2] = { 
+		std::string fens[3] = { 
 			"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1" ,
-			"n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1" 
+			"n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1",
+			"8/6p1/8/8/2r5/3R1KPp/2P4k/8 w - -"
 		};
-		unsigned long long expected_nodes[2][6] = {
+		unsigned long long expected_nodes[3][6] = {
 			{ 48, 2039, 97862, 4085603, 193690690, 8031647685 },
-			{ 24, 496, 9483, 182838, 3605103, 71179139 }
+			{ 24, 496, 9483, 182838, 3605103, 71179139 },
+			{ 16, 250, 4113, 63630, 1092149, 17000173 }
 		};
 
-		for (auto j = 0; j < 2; ++j) {
+		for (auto j = 0; j < 3; ++j) {
 			for (int i = 0; i < 6 && i < maxDepth; ++i) {
 				int depth = i + 1;
 				

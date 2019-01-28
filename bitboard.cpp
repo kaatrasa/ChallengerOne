@@ -6,7 +6,7 @@
 #include "utils/defs.h"
 
 Bitboard OccupiedBB[3][7];
-Bitboard KnightAttacks[64], KingAttacks[64], PawnAttacksEast[2][64], PawnAttacksWest[2][64];
+Bitboard KnightAttacks[SQUARE_CNT], KingAttacks[SQUARE_CNT], PawnAttacksEast[2][SQUARE_CNT], PawnAttacksWest[2][SQUARE_CNT];
 Bitboard SetMask[64], ClearMask[64];
 
 void init_pawn_attacks() {
@@ -14,18 +14,31 @@ void init_pawn_attacks() {
 		File f = file_of(s);
 
 		if (f == FILE_A) {
-			PawnAttacksEast[WHITE][s] = SquareBB[s + NORTH_EAST];
-			PawnAttacksEast[BLACK][s] = SquareBB[s + SOUTH_EAST];
+			if (is_ok(s + NORTH_EAST))
+				PawnAttacksEast[WHITE][s] = SquareBB[s + NORTH_EAST];
+
+			if (is_ok(s + SOUTH_EAST))
+				PawnAttacksEast[BLACK][s] = SquareBB[s + SOUTH_EAST];
 
 		} else if (f == FILE_H) {
-			PawnAttacksWest[WHITE][s] = SquareBB[s + NORTH_WEST];
-			PawnAttacksWest[BLACK][s] = SquareBB[s + SOUTH_WEST];
+			if (is_ok(s + NORTH_WEST))
+				PawnAttacksWest[WHITE][s] = SquareBB[s + NORTH_WEST];
+
+			if (is_ok(s + SOUTH_WEST))
+				PawnAttacksWest[BLACK][s] = SquareBB[s + SOUTH_WEST];
 
 		} else {
-			PawnAttacksEast[WHITE][s] = SquareBB[s + NORTH_EAST];
-			PawnAttacksWest[WHITE][s] = SquareBB[s + NORTH_WEST];
-			PawnAttacksEast[BLACK][s] = SquareBB[s + SOUTH_EAST];
-			PawnAttacksWest[BLACK][s] = SquareBB[s + SOUTH_WEST];
+			if (is_ok(s + NORTH_EAST))
+				PawnAttacksEast[WHITE][s] = SquareBB[s + NORTH_EAST];
+
+			if (is_ok(s + NORTH_WEST))
+				PawnAttacksWest[WHITE][s] = SquareBB[s + NORTH_WEST];
+
+			if (is_ok(s + SOUTH_EAST))
+				PawnAttacksEast[BLACK][s] = SquareBB[s + SOUTH_EAST];
+
+			if (is_ok(s + SOUTH_WEST))
+				PawnAttacksWest[BLACK][s] = SquareBB[s + SOUTH_WEST];
 		}
 	}
 }
@@ -110,6 +123,10 @@ void init_bitboards() {
 	for (Square s1 = SQ_A1; s1 <= SQ_H8; ++s1)
 		for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2)
 			if (s1 != s2) SquareDistance[s1][s2] = std::max(distance<File>(s1, s2), distance<Rank>(s1, s2));
+
+	for (Color c = WHITE; c <= BOTH; ++c)
+		for (PieceType p = ANY_PIECE; p <= KING; ++p)
+			OccupiedBB[c][p] = 0;
 
 	for (Square s = SQ_A1; s <= SQ_H8; ++s) {
 		SquareBB[s] = (1ULL << s);
