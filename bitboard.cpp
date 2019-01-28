@@ -6,7 +6,7 @@
 #include "utils/defs.h"
 
 Bitboard OccupiedBB[3][7];
-Bitboard KnightAttacks[SQUARE_CNT], KingAttacks[SQUARE_CNT], PawnAttacksEast[2][SQUARE_CNT], PawnAttacksWest[2][SQUARE_CNT];
+Bitboard KnightAttacks[SQUARE_NB], KingAttacks[SQUARE_NB], PawnAttacksEast[2][SQUARE_NB], PawnAttacksWest[2][SQUARE_NB];
 Bitboard SetMask[64], ClearMask[64];
 
 void init_pawn_attacks() {
@@ -95,13 +95,13 @@ void init_king_attacks() {
 	}
 }
 
-int SquareDistance[SQUARE_CNT][SQUARE_CNT];
-Bitboard SquareBB[SQUARE_CNT];
-Bitboard FileBB[FILE_CNT];
-Bitboard RankBB[RANK_CNT];
+int SquareDistance[SQUARE_NB][SQUARE_NB];
+Bitboard SquareBB[SQUARE_NB];
+Bitboard FileBB[FILE_NB];
+Bitboard RankBB[RANK_NB];
 
-Magic RookMagics[SQUARE_CNT];
-Magic BishopMagics[SQUARE_CNT];
+Magic RookMagics[SQUARE_NB];
+Magic BishopMagics[SQUARE_NB];
 
 namespace {
 
@@ -195,7 +195,7 @@ namespace {
 	void init_magics(Bitboard table[], Magic magics[], Direction directions[]) {
 
 		// Optimal PRNG seeds to pick the correct magics in the shortest time
-		int seeds[][RANK_CNT] = { { 8977, 44560, 54343, 38998,  5731, 95205, 104912, 17020 },
+		int seeds[][RANK_NB] = { { 8977, 44560, 54343, 38998,  5731, 95205, 104912, 17020 },
 		{ 728, 10316, 55013, 32803, 12281, 15100,  16645,   255 } };
 
 		Bitboard occupancy[4096], reference[4096], edges, b;

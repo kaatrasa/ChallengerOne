@@ -103,7 +103,7 @@ namespace TypeConvertions {
 
 		Square from = from_sq(move);
 		Square to = to_sq(move);
-		PieceType prom = promoted(move);
+		PieceType prom = promoted_piece(move);
 
 		charArray[0] = int_to_file(from & 7);
 		charArray[1] = int_to_rank(from >> 3);

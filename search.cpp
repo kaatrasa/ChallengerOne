@@ -161,7 +161,13 @@ namespace Search {
 
 		Move bestMove = MOVE_NONE, move = MOVE_NONE;
 		Value score = -VALUE_INFINITE;
+		Value eval;
 		int legal = 0;
+
+		if (depth == 1) {
+			eval = Evaluation::evaluate(pos);
+			eval = us == WHITE ? eval : -eval;
+		}
 
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
 			bool searchFullDepth = true;
@@ -184,16 +190,13 @@ namespace Search {
 				&& !inCheck
 				&& !isCapture
 				&& !isPromotion
-				&& !gaveCheck)
+				&& !gaveCheck
+				&& !pos.advanced_pawn_push(move)
+				&& eval + Value(400) <= alpha // Futility margin
+				&& eval < VALUE_KNOWN_WIN) // Do not return unproven wins
 			{
-				Value eval = Value(abs(Evaluation::evaluate(pos)));
-			
-				if (eval + Value(800) <= alpha // Futility margin
-					&& eval < VALUE_KNOWN_WIN) // Do not return unproven wins
-				{
-					pos.undo_move();
-					continue;
-				}
+				pos.undo_move();
+				continue;
 			}
 
 			// Late move reductions

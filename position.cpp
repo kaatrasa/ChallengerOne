@@ -196,6 +196,7 @@ void Position::print() const {
 		}
 		std::cout << std::endl;
 	}
+	std::cout << "Key: " << posKey_ << std::endl;
 
 	std::cout << std::endl;
 }
@@ -332,8 +333,8 @@ bool Position::do_move(const Move move) {
 	Square to = to_sq(move);
 	Color side = sideToMove_;
 	Color enemySide = side == WHITE ? BLACK : WHITE;
-	PieceType capt = captured(move);
-	PieceType prom = promoted(move);
+	PieceType capt = captured_piece(move);
+	PieceType prom = promoted_piece(move);
 
 	history_[hisPly_].posKey = posKey_;
 
@@ -424,8 +425,8 @@ void Position::undo_move() {
 	Move move = history_[hisPly_].move;
 	Square from = from_sq(move);
 	Square to = to_sq(move);
-	PieceType capt = captured(move);
-	PieceType prom = promoted(move);
+	PieceType capt = captured_piece(move);
+	PieceType prom = promoted_piece(move);
 
 	if (enPassant_ != SQ_NONE) posKey_ ^= Zobrist::enpassant[enPassant_ & 7];
 	posKey_ ^= Zobrist::castling[castlingRights_];

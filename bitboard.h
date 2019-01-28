@@ -15,8 +15,8 @@ struct Magic {
 	}
 };
 
-extern Magic RookMagics[SQUARE_CNT];
-extern Magic BishopMagics[SQUARE_CNT];
+extern Magic RookMagics[SQUARE_NB];
+extern Magic BishopMagics[SQUARE_NB];
 
 const Bitboard AllSquares = ~Bitboard(0);
 const Bitboard DarkSquares = 0xAA55AA55AA55AA55ULL;
@@ -41,12 +41,12 @@ constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
 extern Bitboard OccupiedBB[3][7]; // BB[color][piecetype]
-extern Bitboard KnightAttacks[SQUARE_CNT], KingAttacks[SQUARE_CNT], PawnAttacksEast[2][SQUARE_CNT], PawnAttacksWest[2][SQUARE_CNT]; // [color][sq]
+extern Bitboard KnightAttacks[SQUARE_NB], KingAttacks[SQUARE_NB], PawnAttacksEast[2][SQUARE_NB], PawnAttacksWest[2][SQUARE_NB]; // [color][sq]
 
-extern int SquareDistance[SQUARE_CNT][SQUARE_CNT];
-extern Bitboard SquareBB[SQUARE_CNT];
-extern Bitboard FileBB[FILE_CNT];
-extern Bitboard RankBB[RANK_CNT];
+extern int SquareDistance[SQUARE_NB][SQUARE_NB];
+extern Bitboard SquareBB[SQUARE_NB];
+extern Bitboard FileBB[FILE_NB];
+extern Bitboard RankBB[RANK_NB];
 
 void init_bitboards();
 

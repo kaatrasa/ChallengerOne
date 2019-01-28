@@ -34,6 +34,7 @@ public:
 	Square king_sq(Color side) const;
 	PieceType piece_on_sq(int sq) const;
 	Bitboard non_pawn_material(Color side);
+	bool advanced_pawn_push(Move m) const;
 
 	int ply() const;
 	void ply_reset();
@@ -94,11 +95,11 @@ private:
 
 	Undo history_[MAX_GAMELENGTH];
 	Square kingSq_[BOTH];
-	PieceType pieces_[SQUARE_CNT];
+	PieceType pieces_[SQUARE_NB];
 	Move pvArray_[DEPTH_MAX];
 
 	// Move ordering, non captures
-	int historyMoves_[2][SQUARE_CNT][SQUARE_CNT]; // [color][sq][sq]
+	int historyMoves_[2][SQUARE_NB][SQUARE_NB]; // [color][sq][sq]
 	int killerMoves_[2][DEPTH_MAX]; // [killercount == 2][ply]
 };
 
@@ -191,6 +192,11 @@ inline void Position::killer_moves_reset() {
 		killerMoves_[0][ply] = MOVE_NONE;
 		killerMoves_[1][ply] = MOVE_NONE;
 	}
+}
+
+inline bool Position::advanced_pawn_push(Move m) const {
+	return sideToMove_ == WHITE ? rank_of(from_sq(m)) > RANK_4
+		: rank_of(from_sq(m)) < RANK_5;
 }
 
 template<PieceType Pt>

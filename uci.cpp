@@ -39,7 +39,7 @@ Move parse_move(Position& pos, string moveStr) {
 	for (moveNum = 0; moveNum < list.count; ++moveNum) {
 		move = list.moves[moveNum].move;
 		if (from_sq(move) == from && to_sq(move) == to) {
-			promPce = promoted(move);
+			promPce = promoted_piece(move);
 			if (promPce != NO_PIECE) {
 				if (promPce == ROOK && moveStr.back() == 'r') {
 					return move;

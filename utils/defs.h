@@ -16,12 +16,11 @@ typedef unsigned long long Key;
 constexpr int MAX_GAMELENGTH = 256;
 constexpr int MAX_POSITIONMOVES = 256;
 constexpr int MAX_PLY = 128;
-constexpr int SQUARE_CNT = 64;
-constexpr int FILE_CNT = 8;
-constexpr int RANK_CNT = 8;
 
 enum Color { 
-	WHITE, BLACK, BOTH 
+	WHITE, BLACK, BOTH,
+
+	COLOR_NB = 2
 };
 
 enum Piece { 
@@ -33,11 +32,11 @@ enum PieceType {
 };
 
 enum File : int { 
-	FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H 
+	FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB
 };
 
 enum Rank : int { 
-	RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 
+	RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
 };
 
 enum Square : int {
@@ -49,8 +48,9 @@ enum Square : int {
 	SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
 	SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
 	SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
-	
-	SQ_NONE
+	SQ_NONE,
+
+	SQUARE_NB = 64
 };
 
 enum Value : int {
@@ -232,11 +232,15 @@ constexpr Square to_sq(Move m) {
 	return Square((m >> 6) & 0x3F);
 }
 
-constexpr PieceType captured(Move m) {
+constexpr PieceType moved_piece(Move m) {
+	return PieceType((m >> 12) & 0x7);
+}
+
+constexpr PieceType captured_piece(Move m) {
 	return PieceType((m >> 15) & 0x7);
 }
 
-constexpr PieceType promoted(Move m) {
+constexpr PieceType promoted_piece(Move m) {
 	return PieceType((m >> 18) & 0x7);
 }
 
