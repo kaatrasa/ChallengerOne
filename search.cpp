@@ -48,6 +48,22 @@ namespace Search {
 		if (pos.is_repetition() || pos.fifty_move() >= 100) return VALUE_DRAW;
 		if (pos.ply() > DEPTH_MAX - 1) return Evaluation::evaluate(pos);
 
+		bool found;
+		
+		// Check for position in TT
+		TTEntry* ttEntry = TT.probe(pos.pos_key(), found);
+		if (found) {
+			if (ttEntry->flag == EXACT) {
+				return ttEntry->score;
+			}
+			else if (ttEntry->flag == LOWERBOUND)
+				alpha = std::max(alpha, ttEntry->score);
+			else if (ttEntry->flag == UPPERBOUND)
+				beta = std::min(beta, ttEntry->score);
+
+			if (alpha >= beta) return ttEntry->score;
+		}
+
 		Value score = Evaluation::evaluate(pos);
 
 		// Stand pat. Return immediately if static value is at least beta
@@ -190,7 +206,7 @@ namespace Search {
 				&& !isPromotion
 				&& !gaveCheck
 				&& !pos.advanced_pawn_push(move)
-				&& eval + Value(800) <= alpha // Futility margin
+				&& eval + Value(600) <= alpha // Futility margin
 				&& eval < VALUE_KNOWN_WIN) // Do not return unproven wins
 			{
 				pos.undo_move();
@@ -283,8 +299,9 @@ namespace Search {
 		Depth currentDepth = ONE_PLY;
 		Depth mateDepth;
 		int pvmNum = 0;
-		const int windowSize = 25;
-		int failCount = 0;
+		const int windowSize = 10;
+		int failCountHigh = 0;
+		int failCountLow = 0;
 
 		clear_for_search(pos, info);
 
@@ -294,12 +311,12 @@ namespace Search {
 
 			// Aspiration windows
 			if (eval >= beta) {
-				beta += windowSize * (2 << failCount);
-				++failCount;
+				beta += windowSize * (2 << failCountHigh);
+				++failCountHigh;
 				continue;
 			} else if (eval <= alpha) {
-				alpha -= windowSize * (2 << failCount);
-				++failCount;
+				alpha -= windowSize * (2 << failCountLow);
+				++failCountLow;
 				continue;
 			}
 
@@ -319,7 +336,8 @@ namespace Search {
 
 			alpha = eval - windowSize;
 			beta = eval + windowSize;
-			failCount = 0;
+			failCountHigh = 0;
+			failCountLow = 0;
 		}
 
 		info.stopped = true;
