@@ -37,6 +37,11 @@ public:
 	Value non_pawn_material(Color c) const;
 	Value non_pawn_material() const;
 
+	Bitboard pieces() const;
+	Bitboard pieces(PieceType pt) const;
+	Bitboard pieces(Color c) const;
+	Bitboard pieces(Color c, PieceType pt) const;
+
 	bool advanced_pawn_push(Move m) const;
 
 	int ply() const;
@@ -147,6 +152,22 @@ inline Value Position::non_pawn_material(Color c) const {
 
 inline Value Position::non_pawn_material() const {
 	return nonPawnMaterial_[WHITE] + nonPawnMaterial_[BLACK];
+}
+
+inline Bitboard Position::pieces() const {
+	return OccupiedBB[BOTH][ANY_PIECE];
+}
+
+inline Bitboard Position::pieces(PieceType pt) const {
+	return OccupiedBB[BOTH][pt];
+}
+
+inline Bitboard Position::pieces(Color c) const {
+	return OccupiedBB[c][ANY_PIECE];
+}
+
+inline Bitboard Position::pieces(Color c, PieceType pt) const {
+	return OccupiedBB[c][pt];
 }
 
 inline int Position::ply() const {

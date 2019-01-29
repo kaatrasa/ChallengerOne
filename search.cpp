@@ -190,7 +190,7 @@ namespace Search {
 				&& !isPromotion
 				&& !gaveCheck
 				&& !pos.advanced_pawn_push(move)
-				&& eval + Value(400) <= alpha // Futility margin
+				&& eval + Value(800) <= alpha // Futility margin
 				&& eval < VALUE_KNOWN_WIN) // Do not return unproven wins
 			{
 				pos.undo_move();

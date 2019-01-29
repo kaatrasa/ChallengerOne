@@ -6,11 +6,6 @@
 
 namespace Evaluation {
 
-	double to_cp(Value v) { return double(v) / PawnValueEg; }
-
-	Bitboard MobilityArea[COLOR_NB];
-	Value Mobility[COLOR_NB] = { VALUE_ZERO, VALUE_ZERO };
-
 	constexpr Value LazyThreshold = Value(1500);
 	constexpr Value Tempo = Value(28);
 
@@ -180,16 +175,49 @@ namespace Evaluation {
 	// the KingAttackWeights array.
 	int kingAttackersWeight[COLOR_NB];
 
-	// Evaluation::pieces() scores pieces of a given color and type
-	template<Color Us, PieceType Pt>
-	Value pieces() {
-		Bitboard b, bb;
-		Square s;
-		Value value = VALUE_ZERO;
+	Bitboard MobilityArea[COLOR_NB];
+	Value Mobility[COLOR_NB] = { VALUE_ZERO, VALUE_ZERO };
 
+	// Evaluation::initialize() computes king and pawn attacks, and the king ring
+	// bitboard for a given color. This is done at the beginning of the evaluation.
+	template<Color Us>
+	void initialize() {
+		constexpr Color     Them = (Us == WHITE ? BLACK : WHITE);
+		constexpr Direction Up = (Us == WHITE ? NORTH : SOUTH);
+		constexpr Direction Down = (Us == WHITE ? SOUTH : NORTH);
+		constexpr Bitboard LowRanks = (Us == WHITE ? Rank2BB | Rank3BB : Rank7BB | Rank6BB);
 
+		// Find our pawns that are blocked or on the first two ranks
+		Bitboard b = OccupiedBB[Us][PAWN] & (shift<Down>(OccupiedBB[BOTH][ANY_PIECE]) | LowRanks);
+
+		// Squares occupied by those pawns, by our king or queen, or controlled by enemy pawns
+		// are excluded from the mobility area.
+		MobilityArea[Us] = ~(b | OccupiedBB[Us][KING] | OccupiedBB[Us][QUEEN] | pawn_attacks_bb<Them>(OccupiedBB[Them][PAWN]));
+		Mobility[Us] = VALUE_ZERO;
 	}
 
+	// Evaluation::pieces() scores pieces of a given color and type
+	template<Color Us, PieceType Pt>
+	Value pieces(const Position& pos, Phase ph) {
+		Bitboard bb = pos.pieces(Us, Pt);
+		Value value = VALUE_ZERO;
+		Square s;
+
+		while (bb) 
+		{
+			s = pop_lsb(&bb);
+
+			// Find attacked squares, including x-ray attacks for bishops and rooks
+			Bitboard attacks = Pt == BISHOP ? attacks_bb<BISHOP>(s, pos.pieces() ^ pos.pieces(QUEEN))
+							 : Pt == ROOK   ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(QUEEN) ^ pos.pieces(Us, ROOK))
+										    : pos.attacks_from<Pt>(s);
+
+			int mob = popcount(attacks & MobilityArea[Us]);
+			Mobility[Us] += MobilityBonus[Pt - 2][mob][ph];
+		}
+		
+		return value;
+	}
 
 	Value evaluate(const Position& pos) {
 		if (popcount(OccupiedBB[WHITE][KING]) == 0) return VALUE_MATE;
@@ -200,12 +228,22 @@ namespace Evaluation {
 		Value valueMg = pos.psq_score(PHASE_MID);
 		Value valueEg = pos.psq_score(PHASE_END);
 		Value value = (valueMg + valueEg) / 2;
+		Phase ph = pos.non_pawn_material() <= EndgameLimit ? PHASE_END : PHASE_MID;
 
 		// Early exit if score is high
 		if (abs(value) > LazyThreshold)
 			return us == WHITE ? value : -value;
 
-		value = pos.non_pawn_material() <= EndgameLimit ? valueEg : valueMg;
+		initialize<WHITE>();
+		initialize<BLACK>();
+
+		// Pieces should be evaluated first (populate attack tables)
+		value += pieces<WHITE, KNIGHT>(pos, ph) - pieces<BLACK, KNIGHT>(pos, ph)
+			  +  pieces<WHITE, BISHOP>(pos, ph) - pieces<BLACK, BISHOP>(pos, ph)
+			  +  pieces<WHITE, ROOK  >(pos, ph) - pieces<BLACK, ROOK  >(pos, ph)
+			  +  pieces<WHITE, QUEEN >(pos, ph) - pieces<BLACK, QUEEN >(pos, ph);
+
+		value += Mobility[WHITE] - Mobility[BLACK];
 
 		return (us == WHITE ? value : -value) + Evaluation::Tempo;
 	}

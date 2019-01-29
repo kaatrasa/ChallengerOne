@@ -19,6 +19,24 @@ namespace BB {
 	void init();
 }
 
+// shift() moves a bitboard one step along direction D (mainly for pawns)
+template<Direction D>
+constexpr Bitboard shift(Bitboard b) {
+	return  D == NORTH ? b << 8 : D == SOUTH ? b >> 8
+		: D == EAST ? (b & ~FileHBB) << 1 : D == WEST ? (b & ~FileABB) >> 1
+		: D == NORTH_EAST ? (b & ~FileHBB) << 9 : D == NORTH_WEST ? (b & ~FileABB) << 7
+		: D == SOUTH_EAST ? (b & ~FileHBB) >> 7 : D == SOUTH_WEST ? (b & ~FileABB) >> 9
+		: 0;
+}
+
+// pawn_attacks_bb() returns the pawn attacks for the given color from the
+// squares in the given bitboard.
+template<Color C>
+constexpr Bitboard pawn_attacks_bb(Bitboard b) {
+	return C == WHITE ? shift<NORTH_WEST>(b) | shift<NORTH_EAST>(b)
+		: shift<SOUTH_WEST>(b) | shift<SOUTH_EAST>(b);
+}
+
 extern Magic RookMagics[SQUARE_NB];
 extern Magic BishopMagics[SQUARE_NB];
 
