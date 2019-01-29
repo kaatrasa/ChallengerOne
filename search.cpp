@@ -283,7 +283,7 @@ namespace Search {
 		Depth currentDepth = ONE_PLY;
 		Depth mateDepth;
 		int pvmNum = 0;
-		const int windowSize = 5;
+		const int windowSize = 25;
 		int failCount = 0;
 
 		clear_for_search(pos, info);
