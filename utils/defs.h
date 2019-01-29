@@ -175,6 +175,9 @@ constexpr Value operator-(Value v, int i) { return Value(int(v) - i); }
 inline Value& operator+=(Value& v, int i) { return v = v + i; }
 inline Value& operator-=(Value& v, int i) { return v = v - i; }
 
+// Additional operators to multiply a Value by Depth, used to calculate depth based margins
+constexpr Value operator*(Value v, Depth d) { return Value(int(v) * int(d)); }
+
 inline CastlingRight& operator &=(CastlingRight& r, int p) { return r = CastlingRight(r & p);  };
 
 constexpr Color operator~(Color c) {

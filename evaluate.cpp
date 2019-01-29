@@ -236,13 +236,13 @@ namespace Evaluation {
 
 		initialize<WHITE>();
 		initialize<BLACK>();
-
+		
 		// Pieces should be evaluated first (populate attack tables)
 		value += pieces<WHITE, KNIGHT>(pos, ph) - pieces<BLACK, KNIGHT>(pos, ph)
 			  +  pieces<WHITE, BISHOP>(pos, ph) - pieces<BLACK, BISHOP>(pos, ph)
 			  +  pieces<WHITE, ROOK  >(pos, ph) - pieces<BLACK, ROOK  >(pos, ph)
 			  +  pieces<WHITE, QUEEN >(pos, ph) - pieces<BLACK, QUEEN >(pos, ph);
-
+		
 		value += Mobility[WHITE] - Mobility[BLACK];
 
 		return (us == WHITE ? value : -value) + Evaluation::Tempo;

@@ -41,6 +41,7 @@ namespace Search {
 		info.fhf = 0;
 	}
 
+	template <NodeType NT>
 	static Value qsearch(Value alpha, Value beta, Position& pos, SearchInfo& info) {
 		Timeman::check_time_up(info);
 		info.nodes++;
@@ -54,21 +55,21 @@ namespace Search {
 		TTEntry* ttEntry = TT.probe(pos.pos_key(), found);
 		if (found) {
 			if (ttEntry->flag == EXACT) {
-				return ttEntry->score;
+				return ttEntry->value;
 			}
 			else if (ttEntry->flag == LOWERBOUND)
-				alpha = std::max(alpha, ttEntry->score);
+				alpha = std::max(alpha, ttEntry->value);
 			else if (ttEntry->flag == UPPERBOUND)
-				beta = std::min(beta, ttEntry->score);
+				beta = std::min(beta, ttEntry->value);
 
-			if (alpha >= beta) return ttEntry->score;
+			if (alpha >= beta) return ttEntry->value;
 		}
 
 		Value score = Evaluation::evaluate(pos);
 
 		// Stand pat. Return immediately if static value is at least beta
 		if (score >= beta)
-			return score;
+			return beta;
 
 		if (score > alpha)
 			alpha = score;
@@ -85,7 +86,7 @@ namespace Search {
 			if (!pos.do_move(list.moves[moveNum].move)) continue;
 
 			legal++;
-			score = -qsearch(-beta, -alpha, pos, info);
+			score = -qsearch<NT>(-beta, -alpha, pos, info);
 			pos.undo_move();
 
 			if (info.stopped) {
@@ -103,89 +104,143 @@ namespace Search {
 		return alpha;
 	}
 
+	template<NodeType NT>
 	static Value search(Value alpha, Value beta, Depth depth, Position& pos, SearchInfo& info, bool nullOk) {
+		constexpr bool pvNode = NT == PV;
+		const bool rootNode = pvNode && pos.ply() == 0;
+		
+		Color us = pos.side_to_move();
+		TTEntry* ttEntry;
+		Value eval, ttValue = VALUE_NONE, bestValue = -VALUE_INFINITE, childValue, alphaOrig = alpha;
+		Value futilityMargin, seeMargin[2];
+		Move ttMove = MOVE_NONE, bestMove = MOVE_NONE, move = MOVE_NONE;
+		Depth R;
+		bool ttHit, inCheck, doFullSearch;
+		int legalCount = 0;
+
+		// Step 1. Quiescence Search.
+		if (depth <= DEPTH_ZERO) 
+			return qsearch<NT>(alpha, beta, pos, info);
+
+		assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
+		assert(pvNode || (alpha == beta - 1));
+		assert(DEPTH_ZERO < depth && depth < DEPTH_MAX);
+		assert(depth / ONE_PLY * ONE_PLY == depth);
+
+		// Step 2. Time up check.
 		Timeman::check_time_up(info);
 
-		if (pos.ply() > DEPTH_MAX - ONE_PLY)
-			return Evaluation::evaluate(pos);
+		// Step 3. Check for early exit conditions.
+		if (!rootNode) 
+		{
+			if (pos.is_repetition() || pos.fifty_move() >= 100)
+				return VALUE_DRAW;
 
-		if (pos.is_repetition() || pos.fifty_move() >= 100)
-			return VALUE_DRAW;
+			if (pos.ply() >= DEPTH_MAX)
+				return Evaluation::evaluate(pos);
 
-		// Mate distance pruning. Even if we mate at the next move our
-		// alpha is already bigger because a shorter mate was found
-		alpha = std::max(mated_in(pos.ply()), alpha);
-		beta = std::min(mate_in(pos.ply() + 1), beta);
-		if (alpha >= beta)
-			return alpha;
-
-		Value alphaOrig = alpha;
-		Move pvMove = MOVE_NONE;
-		bool found;
-
-		// Check for position in TT
-		TTEntry* ttEntry = TT.probe(pos.pos_key(), found);
-		if (found && ttEntry->depth >= depth) {
-			pvMove = ttEntry->move;
-
-			if (ttEntry->flag == EXACT) {
-				info.nodes++;
-				return ttEntry->score;
-			}
-			else if (ttEntry->flag == LOWERBOUND)
-				alpha = std::max(alpha, ttEntry->score);
-			else if (ttEntry->flag == UPPERBOUND)
-				beta = std::min(beta, ttEntry->score);
-		
-			if (alpha >= beta) return ttEntry->score;
+			// Mate distance pruning. Even if we mate at the next move our
+			// alpha is already bigger because a shorter mate was found.
+			alpha = std::max(mated_in(pos.ply()), alpha);
+			beta = std::min(mate_in(pos.ply() + 1), beta);
+			if (alpha >= beta)
+				return alpha;
 		}
 
-		Color us = pos.side_to_move();
-		bool inCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[~us][ANY_PIECE];
-
-		if (inCheck) ++depth;
-		if (depth == DEPTH_ZERO) return qsearch(alpha, beta, pos, info);
-		info.nodes++;
-
-		// Null move pruning
-		if (nullOk 
-			&& depth >= 4
-			&& !inCheck
-			&& pos.ply() 
-			&& pos.non_pawn_material(us)) 
+		// Step 4. Check for position in the transposition table.
+		ttEntry = TT.probe(pos.pos_key(), ttHit);
+		if (ttHit && ttEntry->depth >= depth) 
 		{
+			ttMove = ttEntry->move;
+			ttValue = ttEntry->value;
+
+			if (ttEntry->flag == EXACT) 
+				return ttValue;
+			else if (ttEntry->flag == LOWERBOUND)
+				alpha = std::max(alpha, ttValue);
+			else if (ttEntry->flag == UPPERBOUND)
+				beta = std::min(beta, ttValue);
+		
+			if (alpha >= beta) return ttValue;
+		}
+
+		// Step 5. Initialize some flags and values.
+		
+		// Calculate whether we are in check
+		inCheck = pos.attackers_to(pos.king_sq()) & pos.pieces(~us);
+		
+		// Calculate static evalation, reuse TT entry value if possible
+		eval = ttHit && ttValue != VALUE_NONE ? ttValue
+											  : Evaluation::evaluate(pos);
+
+		// Futility Pruning Margin
+		futilityMargin = eval + FutilityMargin * depth;
+
+		// Step 6. Razoring. If a Quiescence Search for the current position
+		// still falls way below alpha, we will assume that the score from
+		// the Quiescence search was sufficient.
+		if (   !pvNode
+			&& !inCheck
+			&&  depth <= RazorDepth
+			&&  eval + RazorMargin < alpha)
+			return qsearch<NonPV>(alpha, beta, pos, info);
+
+		// Step 7. Reverse Futility Pruning, special case of null move pruning.
+		// Our position is so good that we can take a big hit and still get 
+		// the beta cutoff, prune.
+		if (   !pvNode
+			&& !inCheck
+			&&  depth <= BetaPruningDepth
+			&&  eval - BetaMargin * depth > beta)
+			return eval;
+
+		// Step 8. Null move pruning.
+		// Our position is so good that we can pass the move and still get 
+		// the beta cutoff, prune. Need to be bit careful of Zugzwang.
+		// We avoid NMP when we have
+		// information from the Transposition Table which suggests it will fail
+		if (   !pvNode
+			&&  nullOk 
+			&&  depth >= NullMovePruningDepth
+			&& !inCheck
+			&&  pos.ply()
+			&&  eval >= beta
+			&&  pos.non_pawn_material(us))
+		{
+
+			R = Depth(4) + depth / 6 + Depth(std::min(3, int(eval - beta) / 200));
+
 			pos.do_null_move();
-			Value score = -search(-beta, -beta + 1, depth - 4 * ONE_PLY, pos, info, false);
+			Value nullValue = -search<NonPV>(-beta, -beta + 1, depth - R, pos, info, false);
 			pos.undo_null_move();
 			
-			if (score >= beta) 
-				return beta;
+			if (nullValue >= beta)
+			{
+				// Do not return unproven mate scores
+				if (nullValue >= VALUE_MATE_IN_MAX_PLY)
+					nullValue = beta;
+
+				return nullValue;
+			}
 		}
+
+		if (inCheck) ++depth;
+		info.nodes++;
 
 		Movelist list = Movelist();
 		Movegen::get_moves(pos, list);
-		Value bestScore = -VALUE_INFINITE;
 		
-		if (pvMove != MOVE_NONE) {
+		if (ttMove != MOVE_NONE) {
 			for (int moveNum = 0; moveNum < list.count; ++moveNum) {
-				if (list.moves[moveNum].move == pvMove) {
+				if (list.moves[moveNum].move == ttMove) {
 					list.moves[moveNum].score = 2000000;
 					break;
 				}
 			}
 		}
 
-		Move bestMove = MOVE_NONE, move = MOVE_NONE;
-		Value score = -VALUE_INFINITE;
-		Value eval;
-		int legal = 0;
-
-		if (depth == 1)
-			eval = Evaluation::evaluate(pos);
-
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
-			bool searchFullDepth = true;
-			Value childScore;
+			doFullSearch = true;
 
 			pick_move(moveNum, list);
 			move = list.moves[moveNum].move;
@@ -197,7 +252,7 @@ namespace Search {
 			bool isPromotion = move & FLAGPROM;
 			bool gaveCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[us][ANY_PIECE];
 
-			legal++;
+			legalCount++;
 			
 			// Futility pruning: frontier
 			if (depth == 1
@@ -222,12 +277,12 @@ namespace Search {
 				&& !gaveCheck) 
 			{
 				Depth reducedDepth = moveNum <= 6 ? 2 * ONE_PLY : depth / 3 + ONE_PLY;
-				childScore = -search(-beta, -alpha, depth - reducedDepth, pos, info, true);
-				if (childScore <= alpha) searchFullDepth = false;
+				childValue = -search<NonPV>(-alpha-1, -alpha, depth - reducedDepth, pos, info, true);
+				if (childValue <= alpha) doFullSearch = false;
 			}
 
-			if (searchFullDepth)
-				childScore = -search(-beta, -alpha, depth - ONE_PLY, pos, info, true);
+			if (doFullSearch)
+				childValue = -search<NT>(-beta, -alpha, depth - ONE_PLY, pos, info, true);
 
 			pos.undo_move();
 
@@ -235,13 +290,13 @@ namespace Search {
 				return VALUE_NONE;
 
 			// New best move
-			if (childScore > score) {
-				score = childScore;
+			if (childValue > bestValue) {
+				bestValue = childValue;
 				bestMove = move;
 
 				// Good move for maximizing player
-				if (score > alpha) {
-					alpha = score;
+				if (bestValue > alpha) {
+					alpha = bestValue;
 
 					// Too good, beta cut-off
 					if (alpha >= beta) {
@@ -251,26 +306,26 @@ namespace Search {
 					}
 
 					if (!isCapture)
-						pos.history_move_set(bestMove, (int) depth*depth);
+						pos.history_move_set(bestMove, (int)depth*depth);
 				}
 			}
 		}
 
-		if (legal == 0) {
+		if (legalCount == 0) {
 			if (inCheck)
 				return mated_in(pos.ply());
 			else
 				return VALUE_DRAW;
 		}
 
-		if (score <= alphaOrig)
-			TT.save(pos.pos_key(), bestMove, score, UPPERBOUND, depth);
-		else if (score >= beta)
-			TT.save(pos.pos_key(), bestMove, score, LOWERBOUND, depth);
+		if (bestValue <= alphaOrig)
+			TT.save(pos.pos_key(), bestMove, bestValue, UPPERBOUND, depth);
+		else if (bestValue >= beta)
+			TT.save(pos.pos_key(), bestMove, bestValue, LOWERBOUND, depth);
 		else
-			TT.save(pos.pos_key(), bestMove, score, EXACT, depth);
+			TT.save(pos.pos_key(), bestMove, bestValue, EXACT, depth);
 
-		return score;
+		return bestValue;
 	}
 
 	bool found_mate(Value score, Depth& mateDepth) {
@@ -306,7 +361,7 @@ namespace Search {
 		clear_for_search(pos, info);
 
 		while (currentDepth <= info.depth) {
-			eval = search(alpha, beta, currentDepth, pos, info, false);
+			eval = search<PV>(alpha, beta, currentDepth, pos, info, false);
 			if (info.stopped) break;
 
 			// Aspiration windows

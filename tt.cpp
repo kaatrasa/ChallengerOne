@@ -16,20 +16,22 @@ void TranspositionTable::clear() {
 		entry->posKey = 0ULL;
 		entry->move = MOVE_NONE;
 		entry->depth = DEPTH_ZERO;
-		entry->score = VALUE_ZERO;
+		entry->value = VALUE_NONE;
 		entry->flag = NO_FLAG_TT;
 	}
 }
 
-void TranspositionTable::save(const Key posKey, const Move move, const Value score, const TTFlag flag, const Depth depth) {
+void TranspositionTable::save(const Key posKey, const Move move, const Value value, const TTFlag flag, const Depth depth) {
 	unsigned long long index = posKey % entryCount_;
+
+	assert(move != MOVE_NONE);
 
 	if (depth >= table_[index].depth) {
 		table_[index].move = move;
 		table_[index].posKey = posKey;
 		table_[index].flag = flag;
 		table_[index].depth = depth;
-		table_[index].score = score;
+		table_[index].value = value;
 	}
 }
 
