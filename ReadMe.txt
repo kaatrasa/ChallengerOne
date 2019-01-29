@@ -9,6 +9,8 @@ Aspiration windows.
 Null move pruning.
 Late move reductions.
 Futility pruning.
+Reverse futility pruning.
+Razoring.
 Simple transposition table.
 One thread.
 
@@ -16,7 +18,8 @@ Move Ordering
 Captures are ordered by MVV/LVA and quiet moves by history and killer heuristics.
 
 Evaluation
-Very basic, only counts material and uses piece square tables.
+Quite primitive: piece square tables and piece mobility.
+Own values for midgame and endgame.
 
 In future, I'm looking forward to improving evaluation, optimizing move generation and making search parallel.
 
