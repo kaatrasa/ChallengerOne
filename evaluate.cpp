@@ -205,7 +205,7 @@ namespace Evaluation {
 		if (abs(value) > LazyThreshold)
 			return us == WHITE ? value : -value;
 
-		value = valueMg >= MidgameLimit ? valueMg : valueEg;
+		value = pos.non_pawn_material() <= EndgameLimit ? valueEg : valueMg;
 
 		return (us == WHITE ? value : -value) + Evaluation::Tempo;
 	}
