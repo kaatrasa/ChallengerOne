@@ -243,6 +243,10 @@ constexpr Value mated_in(int ply) {
 	return -VALUE_MATE + ply;
 }
 
+constexpr Square make_square(File f, Rank r) {
+	return Square((r << 3) + f);
+}
+
 constexpr Square from_sq(Move m) {
 	return Square(m & 0x3F);
 }

@@ -80,11 +80,6 @@ namespace PSQT {
 	// copied from Bonus[] adding the piece value, then the black halves of the
 	// tables are initialized by flipping and changing the sign of the white scores.
 	void init() {
-		Value PieceValue[PHASE_NB][PIECETYPE_NB] = {
-			{ VALUE_ZERO, PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg },
-			{ VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg }
-		};
-
 		for (PieceType pt = NO_PIECE; pt <= KING; ++pt) {
 			for (Square s = SQ_A1; s <= SQ_H8; ++s) {
 				File f = std::min(file_of(s), ~file_of(s));

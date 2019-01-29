@@ -34,7 +34,9 @@ public:
 	Square king_sq() const;
 	Square king_sq(Color side) const;
 	PieceType piece_on_sq(int sq) const;
-	Bitboard non_pawn_material(Color side);
+	Value non_pawn_material(Color c) const;
+	Value non_pawn_material() const;
+
 	bool advanced_pawn_push(Move m) const;
 
 	int ply() const;
@@ -70,18 +72,18 @@ private:
 	bool is_real_move(Move move);
 
 	// do_move, undo_move
-	void clear_piece(const Square sq, const int pieceColor);
-	void add_piece(const Square sq, const PieceType piece, const int pieceColor);
-	void move_piece(const Square from, const Square to, const int pieceColor);
+	void clear_piece(const Square s, const Color c);
+	void add_piece(const Square s, const PieceType pt, const Color c);
+	void move_piece(const Square from, const Square to, const Color c);
 
 	// fen
-	void add_piece(int squareNum, Piece piece);
-	void add_pawn(Color color, Bitboard pawn);
-	void add_knight(Color color, Bitboard knight);
-	void add_bishop(Color color, Bitboard bishop);
-	void add_rook(Color color, Bitboard rook);
-	void add_queen(Color color, Bitboard queen);
-	void add_king(Color color, Bitboard king);
+	void add_piece(Piece pc, Square s);
+	void add_pawn(Color c, Square s);
+	void add_knight(Color c, Square s);
+	void add_bishop(Color c, Square s);
+	void add_rook(Color c, Square s);
+	void add_queen(Color c, Square s);
+	void add_king(Color c, Square s);
 	void clear_pieces();
 
 	std::string fen_;
@@ -102,7 +104,7 @@ private:
 	Value nonPawnMaterial_[COLOR_NB];
 
 	// Move ordering, non captures
-	int historyMoves_[2][SQUARE_NB][SQUARE_NB]; // [color][sq][sq]
+	int historyMoves_[COLOR_NB][SQUARE_NB][SQUARE_NB]; // [color][sq][sq]
 	int killerMoves_[2][DEPTH_MAX]; // [killercount == 2][ply]
 
 };
@@ -139,8 +141,12 @@ inline PieceType Position::piece_on_sq(int sq) const {
 	return pieces_[sq];
 }
 
-inline Bitboard Position::non_pawn_material(Color side) {
-	return OccupiedBB[side][ANY_PIECE] ^ OccupiedBB[side][PAWN] ^ OccupiedBB[side][KING];
+inline Value Position::non_pawn_material(Color c) const {
+	return nonPawnMaterial_[c];
+}
+
+inline Value Position::non_pawn_material() const {
+	return nonPawnMaterial_[WHITE] + nonPawnMaterial_[BLACK];
 }
 
 inline int Position::ply() const {

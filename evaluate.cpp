@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 
 #include "evaluate.h"
 #include "utils/defs.h"
@@ -9,6 +10,9 @@ namespace Evaluation {
 
 	Bitboard MobilityArea[COLOR_NB];
 	Value Mobility[COLOR_NB] = { VALUE_ZERO, VALUE_ZERO };
+
+	constexpr Value LazyThreshold = Value(1500);
+	constexpr Value Tempo = Value(28);
 
 	// MobilityBonus[PieceType-2][attacked] contains bonuses for middle and end game,
 	// indexed by piece type and number of attacked squares in the mobility area.
@@ -176,14 +180,33 @@ namespace Evaluation {
 	// the KingAttackWeights array.
 	int kingAttackersWeight[COLOR_NB];
 
+	// Evaluation::pieces() scores pieces of a given color and type
+	template<Color Us, PieceType Pt>
+	Value pieces() {
+		Bitboard b, bb;
+		Square s;
+		Value value = VALUE_ZERO;
+
+
+	}
+
+
 	Value evaluate(const Position& pos) {
 		if (popcount(OccupiedBB[WHITE][KING]) == 0) return VALUE_MATE;
 		if (popcount(OccupiedBB[BLACK][KING]) == 0) return -VALUE_MATE;
 
-		Value score = VALUE_ZERO;
 		Color us = pos.side_to_move();
 		Color them = ~us;
+		Value valueMg = pos.psq_score(PHASE_MID);
+		Value valueEg = pos.psq_score(PHASE_END);
+		Value value = (valueMg + valueEg) / 2;
 
-		return (pos.side_to_move() == WHITE ? score : -score);
+		// Early exit if score is high
+		if (abs(value) > LazyThreshold)
+			return us == WHITE ? value : -value;
+
+		value = valueMg >= MidgameLimit ? valueMg : valueEg;
+
+		return (us == WHITE ? value : -value) + Evaluation::Tempo;
 	}
 }

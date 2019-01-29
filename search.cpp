@@ -164,10 +164,8 @@ namespace Search {
 		Value eval;
 		int legal = 0;
 
-		if (depth == 1) {
+		if (depth == 1)
 			eval = Evaluation::evaluate(pos);
-			eval = us == WHITE ? eval : -eval;
-		}
 
 		for (int moveNum = 0; moveNum < list.count; ++moveNum) {
 			bool searchFullDepth = true;
