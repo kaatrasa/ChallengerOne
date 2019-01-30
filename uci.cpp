@@ -174,9 +174,11 @@ namespace UCI{
 		TT.clear();
 	}
 
-	void stop(SearchInfo& info) {
+	void stop(Position& pos, SearchInfo& info) {
 		info.stopped = true;
-		if (SearchThread.joinable()) SearchThread.join();
+
+		if (SearchThread.joinable())
+			SearchThread.join();
 	}
 
 	void loop() {
@@ -198,15 +200,16 @@ namespace UCI{
 			token.clear();
 			is >> skipws >> token;
 
-			if (info.stopped && SearchThread.joinable())
-				SearchThread.join();
+			// Search thread may have finished by itself, join it.
+			if (info.stopped)
+				stop(pos, info);
 
 			if (token == "quit") {
 				info.quit = true;
-				stop(info);
+				stop(pos, info);
 				break; 
 			}
-			else if (token == "stop") stop(info);
+			else if (token == "stop") stop(pos, info);
 			else if (token == "uci") uci();
 			else if (token == "isready") cout << "readyok" << endl;
 			else if (token == "go") go(pos, info, is);
@@ -234,7 +237,7 @@ namespace UCI{
 		pos.print_pv(info, depth);
 	}
 
-	void report_go_finished(Position& pos, SearchInfo& info) {
+	void report_best_move(Position& pos, SearchInfo& info) {
 		info.stopped = true;
 		std::cout << "bestmove " 
 				  << TypeConvertions::move_to_string(pos.best_move()) 

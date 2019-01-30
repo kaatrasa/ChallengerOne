@@ -13,6 +13,8 @@
 
 namespace Search {
 
+	bool StopSignal = false;
+
 	static void pick_move(int moveNum, Movelist& list) {
 		MoveEntry temp;
 		int bestScore = 0;
@@ -126,6 +128,7 @@ namespace Search {
 		assert(pvNode || (alpha == beta - 1));
 		assert(DEPTH_ZERO < depth && depth < DEPTH_MAX);
 		assert(depth / ONE_PLY * ONE_PLY == depth);
+		info.nodes++;
 
 		// Step 2. Time up check.
 		Timeman::check_time_up(info);
@@ -225,7 +228,6 @@ namespace Search {
 		}
 
 		if (inCheck) ++depth;
-		info.nodes++;
 
 		Movelist list = Movelist();
 		Movegen::get_moves(pos, list);
@@ -337,7 +339,7 @@ namespace Search {
 		beta = depth >= WindowDepth ? std::min(VALUE_INFINITE, previous + delta) : VALUE_INFINITE;
 
 		// Keep trying larger windows until one works
-		while (true) 
+		while (!info.stopped) 
 		{
 			// Perform a search on the window, return if inside the window
 			value = search<PV>(alpha, beta, depth, pos, info, false);
@@ -368,12 +370,12 @@ namespace Search {
 
 		// Iterative deepening
 		while (depth <= info.depth) {
-			
-			// Check if we need to stop.
-			if (info.stopped) break;
-
+	
 			// Begin searching.
 			eval = aspiration_window(pos, info, depth, eval);
+
+			// Check if we were interrupted.
+			if (info.stopped) break;
 
 			// Report results.
 			UCI::report(pos, info, depth, eval);
@@ -382,7 +384,9 @@ namespace Search {
 			++depth;
 		}
 
-		// Report bestmove and cleanup.
-		UCI::report_go_finished(pos, info);
+		// Inform interface that we have stopped searching.
+		// Report best move.
+		info.stopped = true;
+		UCI::report_best_move(pos, info);
 	}
 }

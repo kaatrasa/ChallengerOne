@@ -6,5 +6,5 @@
 namespace UCI {
 	void loop();
 	void report(Position& pos, SearchInfo& info, Depth depth, Value eval);
-	void report_go_finished(Position& pos, SearchInfo& info);
+	void report_best_move(Position& pos, SearchInfo& info);
 }
