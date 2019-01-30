@@ -225,12 +225,13 @@ namespace UCI{
 					: eval <= VALUE_MATED_IN_MAX_PLY ? -(eval + VALUE_MATE) / 2 : eval;
 
 		// Two possible score types, mate and cp
-		auto type = eval >= VALUE_MATE_IN_MAX_PLY ? " mate "
-				  : eval <= VALUE_MATED_IN_MAX_PLY ? " mate " : " cp ";
+		auto type = eval >= VALUE_MATE_IN_MAX_PLY ? "mate "
+				  : eval <= VALUE_MATED_IN_MAX_PLY ? "mate " : "cp ";
 
 		// Do reporting
-		std::cout << "depth " << depth
-			 	  << type << score
+		std::cout << "info"
+				  << " depth " << depth
+			 	  << " score " << type << score
 				  << " nodes " << info.nodes
 				  << " time " << Timeman::get_time() - info.startTime;
 		// And finally print pv
