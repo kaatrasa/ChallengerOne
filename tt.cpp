@@ -24,15 +24,21 @@ void TranspositionTable::clear() {
 void TranspositionTable::save(const Key posKey, const Move move, const Value value, const TTFlag flag, const Depth depth) {
 	unsigned long long index = posKey % entryCount_;
 
-	assert(move != MOVE_NONE);
+	TTEntry* replace = &table_[index];
 
-	if (depth >= table_[index].depth) {
-		table_[index].move = move;
-		table_[index].posKey = posKey;
-		table_[index].flag = flag;
-		table_[index].depth = depth;
-		table_[index].value = value;
-	}
+	// Don't overwrite an entry from the same position, unless we have
+	// an exact bound or depth that is nearly as good as the old one
+	if (replace->flag != NO_FLAG_TT
+		|| (flag != EXACT
+			&&  replace->posKey == posKey
+			&& depth < replace->depth - 3))
+		return;
+
+	table_[index].move = move;
+	table_[index].posKey = posKey;
+	table_[index].flag = flag;
+	table_[index].depth = depth;
+	table_[index].value = value;
 }
 
 TTEntry* TranspositionTable::probe(Key key, bool& found) const {
