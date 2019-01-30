@@ -50,8 +50,11 @@ public:
 	void his_ply_reset();
 
 	bool is_repetition();
-	Move best_move();
-	void print_pv(SearchInfo& info, const Depth depth);
+
+	// Principal variation
+	Move best_move() const;
+	void best_move_set(Move m);
+	void print_pv();
 
 	// Move ordering, non captures
 	int history_move(Move move) const;
@@ -73,7 +76,6 @@ private:
 	Piece piece_at_square(Square sq) const;
 	void calculate_pos_key();
 	
-	int pv(const int depth);
 	bool is_real_move(Move move);
 
 	// do_move, undo_move
@@ -100,6 +102,7 @@ private:
 	int fiftyMove_ = 0;
 	int ply_ = 0;
 	int hisPly_ = 0;
+	Move bestMoveRoot_;
 
 	Undo history_[MAX_GAMELENGTH];
 	Square kingSq_[BOTH];

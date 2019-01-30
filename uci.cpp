@@ -136,7 +136,7 @@ namespace UCI{
 		<< " stop:" << info.stopTime << " depth:" << info.depth
 		<< " timeset:" << info.timeSet << endl;
 		
-		SearchThread = thread(Search::start, pos, std::ref(info));
+		SearchThread = thread(Search::start, std::ref(pos), std::ref(info));
 	}
 
 	void position(Position& pos, istringstream& is) {
@@ -233,9 +233,9 @@ namespace UCI{
 				  << " depth " << depth
 			 	  << " score " << type << score
 				  << " nodes " << info.nodes
-				  << " time " << Timeman::get_time() - info.startTime;
-		// And finally print pv
-		pos.print_pv(info, depth);
+				  << " time " << Timeman::get_time() - info.startTime
+				  << " pv ";
+		pos.print_pv();
 	}
 
 	void report_best_move(Position& pos, SearchInfo& info) {
@@ -244,5 +244,4 @@ namespace UCI{
 				  << TypeConvertions::move_to_string(pos.best_move()) 
 				  << std::endl;
 	}
-
 }

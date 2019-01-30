@@ -107,46 +107,42 @@ void Position::set(string fen) {
 	calculate_pos_key();
 }
 
-Move Position::best_move() {
-	bool found;
-	TTEntry* entry = TT.probe(posKey_, found);
-
-	if (found) return entry->move;
-	return MOVE_NONE;
+void Position::best_move_set(Move m) {
+	bestMoveRoot_ = m;
 }
 
-int Position::pv(const int depth) {
-	Move move = best_move();
-	int count = 0;
-
-	while (move != MOVE_NONE && count < depth) {
-		if (is_real_move(move)) {
-			do_move(move);
-			pvArray_[count++] = move;
-		} else
-			break; // False move
-
-		move = best_move();
-	}
-
-	while (ply_ > 0) {
-		undo_move();
-	}
-
-	return count;
+Move Position::best_move() const {
+	return bestMoveRoot_;
 }
 
-void Position::print_pv(SearchInfo& info, const Depth depth) {
-	int pvCount = pv(depth);
-	int pvIndex = 0;
-	std::cout << " pv ";
-	while (pvCount) {
-		Move pvMove = pvArray_[pvIndex];
-		std::cout << TypeConvertions::move_to_string(pvMove) << " ";
-		--pvCount;
-		++pvIndex;
-	}
+void Position::print_pv() {
+	TTEntry* ttEntry;
+	bool ttHit;
+	Move move = bestMoveRoot_; // Root move saved here
+	int pvCount = 0 ;
+
+	do 
+	{
+		std::cout << TypeConvertions::move_to_string(move) << " ";
+		do_move(move);
+
+		// Check for position in tt
+		ttEntry = TT.probe(posKey_, ttHit);
+		move = ttEntry->move;
+
+		++pvCount;
+
+	} while (ttHit
+		&&   ttEntry->flag == EXACT
+		&&   is_real_move(move));
+
 	std::cout << std::endl;
+
+	while (pvCount > 0)
+	{
+		undo_move();
+		--pvCount;
+	}
 }
 
 bool Position::is_real_move(Move move) {
@@ -199,6 +195,7 @@ void Position::print() const {
 		std::cout << std::endl;
 	}
 	std::cout << "Key: " << posKey_ << std::endl;
+	std::cout << "Bestmove: " << TypeConvertions::move_to_string(bestMoveRoot_) << std::endl;
 
 	std::cout << std::endl;
 }

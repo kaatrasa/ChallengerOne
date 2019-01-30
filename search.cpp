@@ -156,6 +156,9 @@ namespace Search {
 		{
 			ttMove = ttEntry->move;
 			ttValue = ttEntry->value;
+			
+			if (rootNode)
+				info.bestMove = ttMove;
 
 			if (ttEntry->flag == EXACT) 
 				return ttValue;
@@ -313,6 +316,10 @@ namespace Search {
 			}
 		}
 
+		// Save bestmove if inside root node
+		if (rootNode)
+			info.bestMove = bestMove;
+		
 		if (legalCount == 0) {
 			if (inCheck)
 				return mated_in(pos.ply());
@@ -359,6 +366,8 @@ namespace Search {
 			// Expand the search window
 			delta = delta + delta / 2;
 		}
+
+		return VALUE_NONE;
 	}
 	
 	void start(Position& pos, SearchInfo& info) {
@@ -376,6 +385,9 @@ namespace Search {
 
 			// Check if we were interrupted.
 			if (info.stopped) break;
+
+			// Save best move
+			pos.best_move_set(info.bestMove);
 
 			// Report results.
 			UCI::report(pos, info, depth, eval);

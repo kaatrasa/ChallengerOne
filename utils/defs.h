@@ -153,6 +153,7 @@ struct SearchInfo {
 	bool timeSet;
 	int movestogo;
 	int infinite;
+	Move bestMove;
 
 	long nodes;
 
