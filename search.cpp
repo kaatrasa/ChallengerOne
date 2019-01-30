@@ -328,74 +328,61 @@ namespace Search {
 		return bestValue;
 	}
 
-	bool found_mate(Value score, Depth& mateDepth) {
+	Value aspiration_window(Position& pos, SearchInfo& info, Depth depth, Value previous) {
+		Value alpha, beta, value; 
+		int delta = WindowSize;
 
-		if (score >= VALUE_MATE_IN_MAX_PLY) {
-			double depth = VALUE_MATE - score;
-			depth /= 2;
-			mateDepth = Depth(int(ceil(depth)));
-		
-			return true;
-		} else if (score <= VALUE_MATED_IN_MAX_PLY) {
-			double depth = -VALUE_MATE - score;
-			depth /= 2;
-			mateDepth = Depth(int(floor(depth)));
+		// Create an aspiration window, unless still below the starting depth
+		alpha = depth >= WindowDepth ? std::max(-VALUE_INFINITE, previous - delta) : -VALUE_INFINITE;
+		beta = depth >= WindowDepth ? std::min(VALUE_INFINITE, previous + delta) : VALUE_INFINITE;
 
-			return true;
+		// Keep trying larger windows until one works
+		while (true) 
+		{
+			// Perform a search on the window, return if inside the window
+			value = search<PV>(alpha, beta, depth, pos, info, false);
+			if (value > alpha && value < beta)
+				return value;
+
+			// Search failed low
+			if (value <= alpha) {
+				beta = (alpha + beta) / 2;
+				alpha = std::max(-VALUE_INFINITE, alpha - delta);
+			}
+
+			// Search failed high
+			if (value >= beta)
+				beta = std::min(VALUE_INFINITE, beta + delta);
+
+			// Expand the search window
+			delta = delta + delta / 2;
 		}
-		return false;
 	}
 	
 	void start(Position& pos, SearchInfo& info) {
-		Move bestMove = MOVE_NONE;
-		Value alpha = -VALUE_INFINITE;
-		Value beta = VALUE_INFINITE;
-		Value eval;
-		Depth currentDepth = ONE_PLY;
-		Depth mateDepth;
-		int pvmNum = 0;
-		const int windowSize = 10;
-		int failCountHigh = 0;
-		int failCountLow = 0;
+		Value eval = VALUE_ZERO;
+		Depth depth = ONE_PLY;
 
+		// Prepare for search
 		clear_for_search(pos, info);
 
-		while (currentDepth <= info.depth) {
-			eval = search<PV>(alpha, beta, currentDepth, pos, info, false);
+		// Iterative deepening
+		while (depth <= info.depth) {
+			
+			// Check if we need to stop.
 			if (info.stopped) break;
 
-			// Aspiration windows
-			if (eval >= beta) {
-				beta += windowSize * (2 << failCountHigh);
-				++failCountHigh;
-				continue;
-			} else if (eval <= alpha) {
-				alpha -= windowSize * (2 << failCountLow);
-				++failCountLow;
-				continue;
-			}
+			// Begin searching.
+			eval = aspiration_window(pos, info, depth, eval);
 
-			if (found_mate(eval, mateDepth))
-				std::cout << "info score mate " << mateDepth;
-			else
-				std::cout << "info score cp " << eval;
-			
-			std::cout << " depth " << currentDepth
-				      << " nodes " << info.nodes
-				      << " time " << Timeman::get_time() - info.startTime
-				      << " ";
-			
-			pos.print_pv(info, currentDepth);
-			bestMove = pos.best_move();
-			++currentDepth;
+			// Report results.
+			UCI::report(pos, info, depth, eval);
 
-			alpha = eval - windowSize;
-			beta = eval + windowSize;
-			failCountHigh = 0;
-			failCountLow = 0;
+			// Next depth
+			++depth;
 		}
 
-		info.stopped = true;
-		std::cout << "bestmove " << TypeConvertions::move_to_string(bestMove) << std::endl;
+		// Report bestmove and cleanup.
+		UCI::report_go_finished(pos, info);
 	}
 }

@@ -190,7 +190,8 @@ namespace UCI{
 		info.stopped = false;
 		pos.set(StartFEN);
 
-		while (true) {
+		while (true) 
+		{
 			getline(cin, cmd);
 			istringstream is(cmd);
 
@@ -214,4 +215,30 @@ namespace UCI{
 			else if (token == "print") pos.print();
 		}
 	}
+
+	void report(Position& pos, SearchInfo& info, Depth depth, Value eval) {
+		// If the score is MATE or MATED in X, convert to X
+		Value score = eval >= VALUE_MATE_IN_MAX_PLY ? (VALUE_MATE - eval + 1) / 2
+					: eval <= VALUE_MATED_IN_MAX_PLY ? -(eval + VALUE_MATE) / 2 : eval;
+
+		// Two possible score types, mate and cp
+		auto type = eval >= VALUE_MATE_IN_MAX_PLY ? " mate "
+				  : eval <= VALUE_MATED_IN_MAX_PLY ? " mate " : " cp ";
+
+		// Do reporting
+		std::cout << "depth " << depth
+			 	  << type << score
+				  << " nodes " << info.nodes
+				  << " time " << Timeman::get_time() - info.startTime;
+		// And finally print pv
+		pos.print_pv(info, depth);
+	}
+
+	void report_go_finished(Position& pos, SearchInfo& info) {
+		info.stopped = true;
+		std::cout << "bestmove " 
+				  << TypeConvertions::move_to_string(pos.best_move()) 
+				  << std::endl;
+	}
+
 }

@@ -139,7 +139,7 @@ int Position::pv(const int depth) {
 void Position::print_pv(SearchInfo& info, const Depth depth) {
 	int pvCount = pv(depth);
 	int pvIndex = 0;
-	std::cout << "pv ";
+	std::cout << " pv ";
 	while (pvCount) {
 		Move pvMove = pvArray_[pvIndex];
 		std::cout << TypeConvertions::move_to_string(pvMove) << " ";

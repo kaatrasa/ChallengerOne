@@ -17,5 +17,8 @@ namespace Search {
 
 	constexpr Depth NullMovePruningDepth = Depth(2);
 
+	constexpr int WindowSize = 14;
+	constexpr Depth WindowDepth = Depth(5);
+
 	void start(Position& pos, SearchInfo& info);
 }
