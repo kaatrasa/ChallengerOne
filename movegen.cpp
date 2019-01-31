@@ -261,8 +261,6 @@ namespace Movegen {
 
 	// Piece moves that capture something
 	void add_piece_moves_noisy(Position& pos, Movelist& list, Square from, Bitboard captures) {
-		Color us = pos.side_to_move();
-		Color them = ~us;
 		PieceType movingPt = pos.piece_on_sq(from);
 
 		assert(is_ok(movingPt));

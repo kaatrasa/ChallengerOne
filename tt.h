@@ -25,7 +25,7 @@ private:
 	void* mem_;
 	unsigned long long entryCount_;
 
-	const unsigned long long size_ = 0x4000000;
+	const unsigned long long size_ = 0x6000000;
 };
 
 extern TranspositionTable TT;

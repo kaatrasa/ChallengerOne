@@ -99,7 +99,8 @@ enum Flag : int {
 
 	// Move contains these flags implicitly
 	FLAG_CAP = 0x38000,
-	FLAG_PROM = 0x1C0000
+	FLAG_PROM = 0x1C0000,
+	FLAG_NOISY = 0x3F8000
 };
 
 enum Order : int {

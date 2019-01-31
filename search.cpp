@@ -116,8 +116,8 @@ namespace Search {
 		Value eval, ttValue = VALUE_NONE, bestValue = -VALUE_INFINITE, childValue, alphaOrig = alpha;
 		Value futilityMargin, seeMargin[2];
 		Move ttMove = MOVE_NONE, bestMove = MOVE_NONE, move = MOVE_NONE;
-		Depth r;
-		bool ttHit, inCheck, doFullSearch;
+		Depth R;
+		bool ttHit, inCheck, isQuiet, doFullSearch;
 		int legalCount = 0;
 
 		// Step 1. Quiescence Search.
@@ -214,10 +214,10 @@ namespace Search {
 			&&  pos.non_pawn_material(us))
 		{
 
-			r = Depth(4) + depth / 6 + Depth(std::min(3, int(eval - beta) / 200));
+			R = Depth(4) + depth / 6 + Depth(std::min(3, int(eval - beta) / 200));
 
 			pos.do_null_move();
-			Value nullValue = -search<NonPV>(-beta, -beta + 1, depth - r, pos, info, false);
+			Value nullValue = -search<NonPV>(-beta, -beta + 1, depth - R, pos, info, false);
 			pos.undo_null_move();
 			
 			if (nullValue >= beta)
@@ -253,18 +253,13 @@ namespace Search {
 			if (!pos.do_move(move)) 
 				continue;
 
-			bool isCapture = move & FLAG_CAP;
-			bool isPromotion = move & FLAG_PROM;
-			bool gaveCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[us][PIECETYPE_ANY];
-
 			legalCount++;
-			
+			isQuiet = !(move & FLAG_NOISY);
+
 			// Futility pruning: frontier
-			if (depth == 1
+			if (    depth == 1
+				&&  isQuiet
 				&& !inCheck
-				&& !isCapture
-				&& !isPromotion
-				&& !gaveCheck
 				&& !pos.advanced_pawn_push(move)
 				&& eval + Value(600) <= alpha // Futility margin
 				&& eval < VALUE_KNOWN_WIN) // Do not return unproven wins
@@ -274,12 +269,10 @@ namespace Search {
 			}
 
 			// Late move reductions
-			if (moveNum > 4 
+			if (   legalCount > 1 
 				&& depth > 2
-				&& !inCheck
-				&& !isCapture 
-				&& !isPromotion
-				&& !gaveCheck) 
+				&& isQuiet
+				&& !inCheck) 
 			{
 				Depth reducedDepth = moveNum <= 6 ? 2 * ONE_PLY : depth / 3 + ONE_PLY;
 				childValue = -search<NonPV>(-alpha-1, -alpha, depth - reducedDepth, pos, info, true);
@@ -305,12 +298,12 @@ namespace Search {
 
 					// Too good, beta cut-off
 					if (alpha >= beta) {
-						if (!isCapture)
+						if (isQuiet)
 							pos.killer_move_set(bestMove);
 						break;
 					}
 
-					if (!isCapture)
+					if (isQuiet)
 						pos.history_move_set(bestMove, (Order)depth);
 				}
 			}
