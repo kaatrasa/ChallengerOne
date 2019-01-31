@@ -4,7 +4,7 @@
 #include "utils/defs.h"
 
 struct TTEntry {
-	TTFlag flag;
+	Bound bound;
 	Depth depth;
 	Value value;
 	Move move;
@@ -17,7 +17,7 @@ public:
 	~TranspositionTable() { free(mem_); }
 
 	void clear();
-	void save(const Key posKey, const Move move, const Value value, const TTFlag flag, const Depth depth);
+	void save(const Key posKey, const Move move, const Value value, const Bound bound, const Depth depth);
 	TTEntry* probe(Key key, bool& found) const;
 
 private:

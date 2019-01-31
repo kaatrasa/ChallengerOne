@@ -28,9 +28,9 @@ enum Piece {
 };
 
 enum PieceType { 
-	NO_PIECE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, 
+	PIECETYPE_NONE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, 
 	
-	ANY_PIECE = 0,
+	PIECETYPE_ANY = 0,
 	PIECETYPE_NB = 7
 };
 
@@ -90,13 +90,32 @@ enum Move : int {
 	MOVE_NONE
 };
 
-enum MoveFlag : int {
-	NO_FLAG = 0,
-	FLAGEP = 0x200000,
-	FLAGPS = 0x400000,
-	FLAGCA = 0x8000000,
-	FLAGCAP = 0x38000,
-	FLAGPROM = 0x1C0000
+enum Flag : int {
+	// Move contains these flags explicitly
+	FLAG_NONE = 0,
+	FLAG_EP = 0x200000,
+	FLAG_PS = 0x400000,
+	FLAG_CASTLE = 0x8000000,
+
+	// Move contains these flags implicitly
+	FLAG_CAP = 0x38000,
+	FLAG_PROM = 0x1C0000
+};
+
+enum Order : int {
+	ORDER_NONE,
+	ORDER_ZERO = 0,
+
+	ORDER_QUIET   = 0,
+	ORDER_CAPTURE = 1000000,
+	ORDER_EP      = 1000150,
+	ORDER_PROM_Q  = 1100000,
+	ORDER_PROM_N  = 10000,
+	ORDER_PROM_R  = -1,
+	ORDER_PROM_B  = -1,
+	ORDER_KILLER1 = 900000,
+	ORDER_KILLER2 = 800000,
+	ORDER_TT      = 2000000
 };
 
 enum CastlingRight : int {
@@ -107,8 +126,8 @@ enum CastlingRight : int {
 	BQCA = 8
 };
 
-enum TTFlag { 
-	NO_FLAG_TT, EXACT, UPPERBOUND, LOWERBOUND 
+enum Bound {
+	BOUND_NONE, BOUND_EXACT, BOUND_UPPER, BOUND_LOWER
 };
 
 enum Direction : int {
@@ -137,7 +156,7 @@ struct Undo {
 
 struct MoveEntry {
 	Move move;
-	int score;
+	Order order;
 };
 
 struct Movelist {
@@ -217,6 +236,7 @@ inline T& operator/=(T& d, int i) { return d = T(int(d) / i); }
 ENABLE_FULL_OPERATORS_ON(Value)
 ENABLE_FULL_OPERATORS_ON(Depth)
 ENABLE_FULL_OPERATORS_ON(Direction)
+ENABLE_FULL_OPERATORS_ON(Order)
 
 ENABLE_INCR_OPERATORS_ON(PieceType)
 ENABLE_INCR_OPERATORS_ON(Piece)
@@ -229,6 +249,21 @@ ENABLE_BASE_OPERATORS_ON(CastlingRight)
 
 constexpr bool is_ok(Square s) {
 	return s >= SQ_A1 && s <= SQ_H8;
+}
+
+constexpr bool is_ok(PieceType pt) {
+	return pt == PAWN
+		|| pt == KNIGHT
+		|| pt == BISHOP
+		|| pt == ROOK
+		|| pt == QUEEN
+		|| pt == KING;
+}
+
+constexpr bool is_ok(Flag fl) {
+	return fl == FLAG_EP
+		|| fl == FLAG_PS
+		|| fl == FLAG_CASTLE;
 }
 
 constexpr File file_of(Square s) {
@@ -271,7 +306,14 @@ constexpr PieceType promoted_piece(Move m) {
 	return PieceType((m >> 18) & 0x7);
 }
 
-constexpr Move make(Square f, Square t, PieceType mo, PieceType ca, PieceType pro, MoveFlag fl) {
+constexpr Move make(Square f, Square t, PieceType mo, PieceType ca, PieceType pro, Flag fl) {
+	assert(is_ok(f));
+	assert(is_ok(t));
+	assert(is_ok(mo));
+	assert(is_ok(ca) || ca == PIECETYPE_NONE);
+	assert(is_ok(pro) || pro == PIECETYPE_NONE);
+	assert(is_ok(fl) || fl == FLAG_NONE);
+
 	return Move(f | (t << 6) | (mo << 12) | (ca << 15) | (pro << 18) | fl);
 }
 

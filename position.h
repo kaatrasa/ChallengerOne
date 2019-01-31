@@ -57,12 +57,12 @@ public:
 	void print_pv();
 
 	// Move ordering, non captures
-	int history_move(Move move) const;
-	void history_move_set(Move move, int value);
+	Order history_move(Move move) const;
+	void history_move_set(Move move, Order incr);
 	void history_moves_reset();
-	int killer_move1() const;
-	int killer_move2() const;
-	void killer_move_set(int move);
+	Move killer_move1() const;
+	Move killer_move2() const;
+	void killer_move_set(const Move m);
 	void killer_moves_reset();
 
 	// Attacks to/from a given square
@@ -112,9 +112,8 @@ private:
 	Value nonPawnMaterial_[COLOR_NB];
 
 	// Move ordering, non captures
-	int historyMoves_[COLOR_NB][SQUARE_NB][SQUARE_NB]; // [color][sq][sq]
-	int killerMoves_[2][DEPTH_MAX]; // [killercount == 2][ply]
-
+	Order historyMoves_[COLOR_NB][SQUARE_NB][SQUARE_NB]; // [color][sq][sq]
+	Move killerMoves_[2][DEPTH_MAX]; // [killercount == 2][ply]
 };
 
 inline Color Position::side_to_move() const {
@@ -158,7 +157,7 @@ inline Value Position::non_pawn_material() const {
 }
 
 inline Bitboard Position::pieces() const {
-	return OccupiedBB[BOTH][ANY_PIECE];
+	return OccupiedBB[BOTH][PIECETYPE_ANY];
 }
 
 inline Bitboard Position::pieces(PieceType pt) const {
@@ -166,7 +165,7 @@ inline Bitboard Position::pieces(PieceType pt) const {
 }
 
 inline Bitboard Position::pieces(Color c) const {
-	return OccupiedBB[c][ANY_PIECE];
+	return OccupiedBB[c][PIECETYPE_ANY];
 }
 
 inline Bitboard Position::pieces(Color c, PieceType pt) const {
@@ -197,32 +196,32 @@ inline Value Position::psq_score(Phase p) const {
 	return psq_[p];
 }
 
-inline int Position::history_move(Move move) const {
+inline Order Position::history_move(Move move) const {
 	return historyMoves_[sideToMove_][from_sq(move)][to_sq(move)];
 }
 
-inline void Position::history_move_set(Move move, int value) {
-	historyMoves_[sideToMove_][from_sq(move)][to_sq(move)] += value;
+inline void Position::history_move_set(Move move, Order incr) {
+	historyMoves_[sideToMove_][from_sq(move)][to_sq(move)] += incr;
 }
 
 inline void Position::history_moves_reset() {
 	for (Color c = WHITE; c <= BLACK; ++c)
 		for (Square from = SQ_A1; from <= SQ_H8; ++from)
 			for (Square to = SQ_A1; to <= SQ_H8; ++to)
-				historyMoves_[c][from][to] = 0;
+				historyMoves_[c][from][to] = ORDER_ZERO;
 }
 
-inline int Position::killer_move1() const {
+inline Move Position::killer_move1() const {
 	return killerMoves_[0][ply_];
 }
 
-inline int Position::killer_move2() const {
+inline Move Position::killer_move2() const {
 	return killerMoves_[1][ply_];
 }
 
-inline void Position::killer_move_set(int move) {
+inline void Position::killer_move_set(const Move m) {
 	killerMoves_[1][ply_] = killerMoves_[0][ply_];
-	killerMoves_[0][ply_] = move;
+	killerMoves_[0][ply_] = m;
 }
 
 inline void Position::killer_moves_reset() {
@@ -240,7 +239,7 @@ inline bool Position::advanced_pawn_push(Move m) const {
 template<PieceType Pt>
 inline Bitboard Position::attacks_from(Square s) const {
 	assert(Pt != PAWN);
-	return  Pt == BISHOP || Pt == ROOK ? attacks_bb<Pt>(s, OccupiedBB[BOTH][ANY_PIECE])
+	return  Pt == BISHOP || Pt == ROOK ? attacks_bb<Pt>(s, OccupiedBB[BOTH][PIECETYPE_ANY])
 		: Pt == QUEEN ? attacks_from<ROOK>(s) | attacks_from<BISHOP>(s)
 		: Pt == KNIGHT ? KnightAttacks[s]
 		: KingAttacks[s];
@@ -253,9 +252,9 @@ inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
 
 inline Bitboard Position::attacks_from(PieceType pt, Square s) const {
 	assert(pt != PAWN);
-	return attacks_bb(pt, s, OccupiedBB[BOTH][ANY_PIECE]);
+	return attacks_bb(pt, s, OccupiedBB[BOTH][PIECETYPE_ANY]);
 }
 
 inline Bitboard Position::attackers_to(Square s) const {
-	return attackers_to(s, OccupiedBB[BOTH][ANY_PIECE]);
+	return attackers_to(s, OccupiedBB[BOTH][PIECETYPE_ANY]);
 }

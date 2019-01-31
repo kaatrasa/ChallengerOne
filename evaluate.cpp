@@ -188,7 +188,7 @@ namespace Evaluation {
 		constexpr Bitboard LowRanks = (Us == WHITE ? Rank2BB | Rank3BB : Rank7BB | Rank6BB);
 
 		// Find our pawns that are blocked or on the first two ranks
-		Bitboard b = OccupiedBB[Us][PAWN] & (shift<Down>(OccupiedBB[BOTH][ANY_PIECE]) | LowRanks);
+		Bitboard b = OccupiedBB[Us][PAWN] & (shift<Down>(OccupiedBB[BOTH][PIECETYPE_ANY]) | LowRanks);
 
 		// Squares occupied by those pawns, by our king or queen, or controlled by enemy pawns
 		// are excluded from the mobility area.

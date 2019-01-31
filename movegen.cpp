@@ -5,76 +5,77 @@
 
 namespace Movegen {
 
-	const int victimScore[13] = { 0, 100, 200, 300, 400, 500, 600, 100, 200, 300, 400, 500, 600 };
-	int mvvLVaScores[13][13];
+	const Order VictimScore[13] = {ORDER_ZERO , Order(100), Order(200), Order(300), Order(400),
+								   Order(500), Order(600), Order(100), Order(200), Order(300),
+								   Order(400), Order(500), Order(600) };
+	Order MvvLVaScores[13][13];
 
 	void init_mvvlva() {
 		for (int attacker = 0; attacker <= 12; ++attacker) {
 			for (int victim = 0; victim <= 12; ++victim) {
-				mvvLVaScores[victim][attacker] = victimScore[victim] + 6 - (victimScore[attacker] / 100);
+				MvvLVaScores[victim][attacker] = VictimScore[victim] + Order(6) - (VictimScore[attacker] / 100);
 			}
 		}
 	}
 
-	static void add_quiet_move(const Position& pos, Movelist& list, Move move) {
+	static void add_quiet(const Position& pos, Movelist& list, Move move) {
 		list.moves[list.count].move = move;
 
 		if (move == pos.killer_move1())
-			list.moves[list.count].score = 900000;
+			list.moves[list.count].order = ORDER_KILLER1;
 		else if (move == pos.killer_move2())
-			list.moves[list.count].score = 800000;
+			list.moves[list.count].order = ORDER_KILLER2;
 		else
-			list.moves[list.count].score = pos.history_move(move);
+			list.moves[list.count].order = pos.history_move(move);
 
 		list.count++;
 	}
 
-	static void add_capture_move(const Position& pos, Movelist& list, Move move) {
+	static void add_capture(const Position& pos, Movelist& list, Move move) {
 		list.moves[list.count].move = move;
-		list.moves[list.count].score = mvvLVaScores[pos.piece_on_sq(to_sq(move))][pos.piece_on_sq(from_sq(move))] + 1000000;
+		list.moves[list.count].order = MvvLVaScores[captured_piece(move)][moved_piece(move)] + ORDER_CAPTURE;
 		list.count++;
 	}
 
-	static void add_en_passant_move(const Position& pos, Movelist& list, Move move) {
+	static void add_ep(const Position& pos, Movelist& list, Move move) {
 		list.moves[list.count].move = move;
-		list.moves[list.count].score = 105 + 1000000;
+		list.moves[list.count].order = ORDER_EP;
 		list.count++;
 	}
 
-	void add_piece_moves(Position& pos, Movelist& list, Square from) {
-		Color color = pos.side_to_move();
-		PieceType movingPt = pos.piece_on_sq(from);
-		Bitboard moves = pos.attacks_from(movingPt, from) & (~OccupiedBB[color][ANY_PIECE]);
+	static void add_promotion(const Position& pos, Movelist& list, Move move, PieceType prom) {
+		assert(prom != PAWN);
+		assert(prom != KING);
 
-		while (moves) {
-			Square to = pop_lsb(&moves);
-			PieceType capturedPt = pos.piece_on_sq(to);
-
-			if (capturedPt) {
-				add_capture_move(pos, list, make(from, to, movingPt, capturedPt, NO_PIECE, NO_FLAG));
-			} else {
-				add_quiet_move(pos, list, make(from, to, movingPt, NO_PIECE, NO_PIECE, NO_FLAG));
-			}
+		list.moves[list.count].move = move;
+		
+		switch (prom)
+		{
+		case QUEEN: list.moves[list.count].order = ORDER_PROM_Q;
+		case KNIGHT: list.moves[list.count].order = ORDER_PROM_N;
+		case BISHOP: list.moves[list.count].order = ORDER_PROM_B;
+		case ROOK: list.moves[list.count].order = ORDER_PROM_R;
 		}
+		list.count++;
 	}
 
 	void add_castling_moves(Position& pos, Movelist& list) {
 		if (pos.side_to_move() == WHITE) {
 			if (pos.can_castle(WKCA)) {
-				if ((pos.piece_on_sq(SQ_F1) == NO_PIECE) && (pos.piece_on_sq(SQ_G1) == NO_PIECE)) {
-					if (!(pos.attackers_to(SQ_E1) & OccupiedBB[BLACK][ANY_PIECE])) {
-						if (!(pos.attackers_to(SQ_F1) & OccupiedBB[BLACK][ANY_PIECE])) {
-							add_quiet_move(pos, list, make(SQ_E1, SQ_G1, KING, NO_PIECE, NO_PIECE, FLAGCA));
+				if ((pos.piece_on_sq(SQ_F1) == PIECETYPE_NONE) && (pos.piece_on_sq(SQ_G1) == PIECETYPE_NONE)) {
+					if (!(pos.attackers_to(SQ_E1) & OccupiedBB[BLACK][PIECETYPE_ANY])) {
+						if (!(pos.attackers_to(SQ_F1) & OccupiedBB[BLACK][PIECETYPE_ANY])) {
+							add_quiet(pos, list, make(SQ_E1, SQ_G1, KING, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_CASTLE));
 						}
 					}
 				}
 			}
 
 			if (pos.can_castle(WQCA)) {
-				if ((pos.piece_on_sq(SQ_D1) == NO_PIECE) && (pos.piece_on_sq(SQ_C1) == NO_PIECE) && (pos.piece_on_sq(SQ_B1) == NO_PIECE)) {
-					if (!(pos.attackers_to(SQ_E1) & OccupiedBB[BLACK][ANY_PIECE])) {
-						if (!(pos.attackers_to(SQ_D1) & OccupiedBB[BLACK][ANY_PIECE])) {
-							add_quiet_move(pos, list, make(SQ_E1, SQ_C1, KING, NO_PIECE, NO_PIECE, FLAGCA));
+				if ((pos.piece_on_sq(SQ_D1) == PIECETYPE_NONE) && (pos.piece_on_sq(SQ_C1) == PIECETYPE_NONE) && (pos.piece_on_sq(SQ_B1) == PIECETYPE_NONE)) {
+					if (!(pos.attackers_to(SQ_E1) & OccupiedBB[BLACK][PIECETYPE_ANY])) {
+						if (!(pos.attackers_to(SQ_D1) & OccupiedBB[BLACK][PIECETYPE_ANY])) {
+							add_quiet(pos, list, make(SQ_E1, SQ_C1, KING, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_CASTLE));
 						}
 					}
 				}
@@ -82,20 +83,20 @@ namespace Movegen {
 
 		} else {
 			if (pos.can_castle(BKCA)) {
-				if ((pos.piece_on_sq(SQ_F8) == NO_PIECE) && (pos.piece_on_sq(SQ_G8) == NO_PIECE)) {
-					if (!(pos.attackers_to(SQ_E8) & OccupiedBB[WHITE][ANY_PIECE])) {
-						if (!(pos.attackers_to(SQ_F8) & OccupiedBB[WHITE][ANY_PIECE])) {
-							add_quiet_move(pos, list, make(SQ_E8, SQ_G8, KING, NO_PIECE, NO_PIECE, FLAGCA));
+				if ((pos.piece_on_sq(SQ_F8) == PIECETYPE_NONE) && (pos.piece_on_sq(SQ_G8) == PIECETYPE_NONE)) {
+					if (!(pos.attackers_to(SQ_E8) & OccupiedBB[WHITE][PIECETYPE_ANY])) {
+						if (!(pos.attackers_to(SQ_F8) & OccupiedBB[WHITE][PIECETYPE_ANY])) {
+							add_quiet(pos, list, make(SQ_E8, SQ_G8, KING, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_CASTLE));
 						}
 					}
 				}
 			}
 
 			if (pos.can_castle(BQCA)) {
-				if ((pos.piece_on_sq(SQ_D8) == NO_PIECE) && (pos.piece_on_sq(SQ_C8) == NO_PIECE) && (pos.piece_on_sq(SQ_B8) == NO_PIECE)) {
-					if (!(pos.attackers_to(SQ_E8) & OccupiedBB[WHITE][ANY_PIECE])) {
-						if (!(pos.attackers_to(SQ_D8) & OccupiedBB[WHITE][ANY_PIECE])) {
-							add_quiet_move(pos, list, make(SQ_E8, SQ_C8, KING, NO_PIECE, NO_PIECE, FLAGCA));
+				if ((pos.piece_on_sq(SQ_D8) == PIECETYPE_NONE) && (pos.piece_on_sq(SQ_C8) == PIECETYPE_NONE) && (pos.piece_on_sq(SQ_B8) == PIECETYPE_NONE)) {
+					if (!(pos.attackers_to(SQ_E8) & OccupiedBB[WHITE][PIECETYPE_ANY])) {
+						if (!(pos.attackers_to(SQ_D8) & OccupiedBB[WHITE][PIECETYPE_ANY])) {
+							add_quiet(pos, list, make(SQ_E8, SQ_C8, KING, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_CASTLE));
 						}
 					}
 				}
@@ -103,187 +104,241 @@ namespace Movegen {
 		}
 	}
 
-	void add_pawn_moves(Position& pos, Movelist& list, Square from) {
-		unsigned int rank = from >> 3;
-		Color color = pos.side_to_move();
-		Bitboard captures = pos.attacks_from<PAWN>(from, color) & OccupiedBB[color ^ 1][ANY_PIECE];
+	// Noisy pawn moves: captures, promotions, en passant
+	void add_pawn_moves_noisy(Position& pos, Movelist& list, Square from) {
+		Rank rank = rank_of(from);
+		Color us = pos.side_to_move();
+		Bitboard captures = pos.attacks_from<PAWN>(from, us) & OccupiedBB[~us][PIECETYPE_ANY];
 
-		if (color == WHITE) {
-			Bitboard singlePushMoves = single_push_targets_white(SquareBB[from], ~OccupiedBB[BOTH][ANY_PIECE]);
-			
+		if (us == WHITE) {
+
 			if (rank == RANK_7) {
+				Bitboard singlePushMoves = single_push_targets_white(SquareBB[from], ~OccupiedBB[BOTH][PIECETYPE_ANY]);
+
 				while (singlePushMoves) {
 					Square to = pop_lsb(&singlePushMoves);
 
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, QUEEN, NO_FLAG));
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, ROOK, NO_FLAG));
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, BISHOP, NO_FLAG));
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, KNIGHT, NO_FLAG));
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, QUEEN, FLAG_NONE), QUEEN);
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, ROOK, FLAG_NONE), ROOK);
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, BISHOP, FLAG_NONE), BISHOP);
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, KNIGHT, FLAG_NONE), KNIGHT);
+				}
+
+				while (captures) 
+				{
+					Square to = pop_lsb(&captures);
+					PieceType capturedPiece = pos.piece_on_sq(to);
+
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, QUEEN, FLAG_NONE), QUEEN);
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, ROOK, FLAG_NONE), ROOK);
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, BISHOP, FLAG_NONE), BISHOP);
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, KNIGHT, FLAG_NONE), KNIGHT);
+				}
+			}
+			else
+			{
+				while (captures) 
+				{
+					Square to = pop_lsb(&captures);
+					PieceType capturedPiece = pos.piece_on_sq(to);
+
+					add_capture(pos, list, make(from, to, PAWN, capturedPiece, PIECETYPE_NONE, FLAG_NONE));
+				}
+
+				if (rank == RANK_5) 
+				{
+					if (from + NORTH_WEST == pos.en_passant())
+						add_ep(pos, list, make(from, from + NORTH_WEST, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_EP));
+
+					else if (from + NORTH_EAST == pos.en_passant())
+						add_ep(pos, list, make(from, from + NORTH_EAST, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_EP));
+				}
+			}
+		}
+		else // Black moves
+		{
+
+			if (rank == RANK_2) 
+			{
+				Bitboard singlePushMoves = single_push_targets_black(SquareBB[from], ~OccupiedBB[BOTH][PIECETYPE_ANY]);
+
+				while (singlePushMoves) {
+					Square to = pop_lsb(&singlePushMoves);
+
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, QUEEN, FLAG_NONE), QUEEN);
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, ROOK, FLAG_NONE), ROOK);
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, BISHOP, FLAG_NONE), BISHOP);
+					add_promotion(pos, list, make(from, to, PAWN, PIECETYPE_NONE, KNIGHT, FLAG_NONE), KNIGHT);
 				}
 
 				while (captures) {
 					Square to = pop_lsb(&captures);
 					PieceType capturedPiece = pos.piece_on_sq(to);
 
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, QUEEN, NO_FLAG));
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, ROOK, NO_FLAG));
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, BISHOP, NO_FLAG));
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, KNIGHT, NO_FLAG));
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, QUEEN, FLAG_NONE), QUEEN);
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, ROOK, FLAG_NONE), ROOK);
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, BISHOP, FLAG_NONE), BISHOP);
+					add_promotion(pos, list, make(from, to, PAWN, capturedPiece, KNIGHT, FLAG_NONE), KNIGHT);
 				}
 
-			} else if (rank == RANK_2) {
-				Bitboard doublePushMoves = double_push_targets_white(SquareBB[from], ~OccupiedBB[BOTH][ANY_PIECE]);
+			}
+			else 
+			{
+				while (captures) 
+				{
+					Square to = pop_lsb(&captures);
+					PieceType capturedPiece = pos.piece_on_sq(to);
 
-				while (singlePushMoves) {
-					Square to = pop_lsb(&singlePushMoves);
-
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
+					add_capture(pos, list, make(from, to, PAWN, capturedPiece, PIECETYPE_NONE, FLAG_NONE));
 				}
 
-				while (doublePushMoves) {
+				if (rank == RANK_4) 
+				{
+					if (from + SOUTH_EAST == pos.en_passant())
+						add_ep(pos, list, make(from, from + SOUTH_EAST, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_EP));
+
+					else if (from + SOUTH_WEST == pos.en_passant())
+						add_ep(pos, list, make(from, from + SOUTH_WEST, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_EP));
+				}
+			}
+		}
+	}
+
+	// Quiet pawn moves: pawn pushes (1 or 2 steps)
+	void add_pawn_moves_quiet(Position& pos, Movelist& list, Square from) {
+		Rank rank = rank_of(from);
+		Color us = pos.side_to_move();
+
+		// All promotion moves are considered noisy
+		if (   us == WHITE && rank == RANK_7 
+			|| us == BLACK && rank == RANK_2) return;
+
+		if (us == WHITE) {
+			Bitboard singlePushMoves = single_push_targets_white(SquareBB[from], ~OccupiedBB[BOTH][PIECETYPE_ANY]);
+
+			while (singlePushMoves) {
+				Square to = pop_lsb(&singlePushMoves);
+
+				add_quiet(pos, list, make(from, to, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_NONE));
+			}
+
+			if (rank == RANK_2) 
+			{
+				Bitboard doublePushMoves = double_push_targets_white(SquareBB[from], ~OccupiedBB[BOTH][PIECETYPE_ANY]);
+
+				while (doublePushMoves) 
+				{
 					Square to = pop_lsb(&doublePushMoves);
-
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, FLAGPS));
-				}
-
-				while (captures) {
-					Square to = pop_lsb(&captures);
-					PieceType capturedPiece = pos.piece_on_sq(to);
 					
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
-				}
-
-			} else {
-				while (singlePushMoves) {
-					Square to = pop_lsb(&singlePushMoves);
-
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
-				}
-
-				while (captures) {
-					Square to = pop_lsb(&captures);
-					PieceType capturedPiece = pos.piece_on_sq(to);
-
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
-				}
-
-				if (rank == RANK_5) {
-					if (from + 7 == pos.en_passant()) {
-						add_en_passant_move(pos, list, make(from, from + NORTH_WEST, PAWN, NO_PIECE, NO_PIECE, FLAGEP));
-					} else if (from + 9 == pos.en_passant()) {
-						add_en_passant_move(pos, list, make(from, from + NORTH_EAST, PAWN, NO_PIECE, NO_PIECE, FLAGEP));
-					}
+					add_quiet(pos, list, make(from, to, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_PS));
 				}
 			}
-		} else {
-			Bitboard singlePushMoves = single_push_targets_black(SquareBB[from], ~OccupiedBB[BOTH][ANY_PIECE]);
+		}
+		else // Black moves
+		{
+			Bitboard singlePushMoves = single_push_targets_black(SquareBB[from], ~OccupiedBB[BOTH][PIECETYPE_ANY]);
 
-			if (rank == RANK_2) {
-				while (singlePushMoves) {
-					Square to = pop_lsb(&singlePushMoves);
+			while (singlePushMoves) 
+			{
+				Square to = pop_lsb(&singlePushMoves);
 
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, QUEEN, NO_FLAG));
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, ROOK, NO_FLAG));
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, BISHOP, NO_FLAG));
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, KNIGHT, NO_FLAG));
-				}
+				add_quiet(pos, list, make(from, to, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_NONE));
+			}
 
-				while (captures) {
-					Square to = pop_lsb(&captures);
-					PieceType capturedPiece = pos.piece_on_sq(to);
-
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, QUEEN, NO_FLAG));
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, ROOK, NO_FLAG));
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, BISHOP, NO_FLAG));
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, KNIGHT, NO_FLAG));
-				}
-			} else if (rank == RANK_7) {
-				Bitboard doublePushMoves = double_push_targets_black(SquareBB[from], ~OccupiedBB[BOTH][ANY_PIECE]);
-
-				while (singlePushMoves) {
-					Square to = pop_lsb(&singlePushMoves);
-
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
-				}
-
-				while (doublePushMoves) {
+			if (rank == RANK_7) 
+			{
+				Bitboard doublePushMoves = double_push_targets_black(SquareBB[from], ~OccupiedBB[BOTH][PIECETYPE_ANY]);
+				
+				while (doublePushMoves) 
+				{
 					Square to = pop_lsb(&doublePushMoves);
 
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, FLAGPS));
-				}
-
-				while (captures) {
-					Square to = pop_lsb(&captures);
-					PieceType capturedPiece = pos.piece_on_sq(to);
-
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
+					add_quiet(pos, list, make(from, to, PAWN, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_PS));
 				}
 			}
-			else {
-				while (singlePushMoves) {
-					Square to = pop_lsb(&singlePushMoves);
+		}
+	}
 
-					add_quiet_move(pos, list, make(from, to, PAWN, NO_PIECE, NO_PIECE, NO_FLAG));
-				}
+	// Piece moves that capture something
+	void add_piece_moves_noisy(Position& pos, Movelist& list, Square from, Bitboard captures) {
+		Color us = pos.side_to_move();
+		Color them = ~us;
+		PieceType movingPt = pos.piece_on_sq(from);
 
-				while (captures) {
-					Square to = pop_lsb(&captures);
-					PieceType capturedPiece = pos.piece_on_sq(to);
+		assert(is_ok(movingPt));
+		assert(movingPt != PAWN);
 
-					add_capture_move(pos, list, make(from, to, PAWN, capturedPiece, NO_PIECE, NO_FLAG));
-				}
+		while (captures) 
+		{
+			Square to = pop_lsb(&captures);
+			PieceType capturedPt = pos.piece_on_sq(to);
 
-				if (rank == RANK_4) {
-					if (from + SOUTH_EAST == pos.en_passant()) {
-						add_en_passant_move(pos, list, make(from, from + SOUTH_EAST, PAWN, NO_PIECE, NO_PIECE, FLAGEP));
-					} else if (from + SOUTH_WEST == pos.en_passant()) {
-						add_en_passant_move(pos, list, make(from, from + SOUTH_WEST, PAWN, NO_PIECE, NO_PIECE, FLAGEP));
-					}
-				}
-			}
+			assert(is_ok(capturedPt));
+
+			add_capture(pos, list, make(from, to, movingPt, capturedPt, PIECETYPE_NONE, FLAG_NONE));
+		}
+	}
+
+	// Piece moves that don't capture anything
+	void add_piece_moves_quiet(Position& pos, Movelist& list, Square from, Bitboard quiets) {
+		PieceType movingPt = pos.piece_on_sq(from);
+
+		while (quiets) 
+		{
+			Square to = pop_lsb(&quiets);
+
+			assert(pos.piece_on_sq(to) == PIECETYPE_NONE);
+
+			add_quiet(pos, list, make(from, to, movingPt, PIECETYPE_NONE, PIECETYPE_NONE, FLAG_NONE));
 		}
 	}
 
 	void get_moves(Position& pos, Movelist& list) {
-		Color color = pos.side_to_move();
-		Bitboard pawns = OccupiedBB[color][PAWN];
-		Bitboard pieces = OccupiedBB[color][ANY_PIECE] ^ pawns;
+		Color us = pos.side_to_move();
+		Color them = ~us;
+		Bitboard pawns = OccupiedBB[us][PAWN];
+		Bitboard pieces = OccupiedBB[us][PIECETYPE_ANY] ^ pawns;
 
 		while (pawns)
-			add_pawn_moves(pos, list, pop_lsb(&pawns));
+		{
+			Square from = pop_lsb(&pawns);
+
+			add_pawn_moves_noisy(pos, list, from);
+			add_pawn_moves_quiet(pos, list, from);
+		}
 
 		while (pieces) 
-			add_piece_moves(pos, list, pop_lsb(&pieces));
+		{
+			Square from = pop_lsb(&pieces);
+			PieceType movingPt = pos.piece_on_sq(from);
+			Bitboard moves = pos.attacks_from(movingPt, from) & (~OccupiedBB[us][PIECETYPE_ANY]);
+			Bitboard captures = moves & OccupiedBB[them][PIECETYPE_ANY];
 
-		if (pos.castling_rights()) add_castling_moves(pos, list);
-	}
-
-	void add_captures(Position& pos, Movelist& list, Square from) {
-		Bitboard captures = 0;
-		Color color = pos.side_to_move();
-		Color enemyColor = color == WHITE ? BLACK : WHITE;
-		PieceType movingPt = pos.piece_on_sq(from);
-
-		if (movingPt == PAWN) {
-			captures = pos.attacks_from<PAWN>(from, color) & OccupiedBB[enemyColor][ANY_PIECE];
-		} else {
-			captures = pos.attacks_from(movingPt, from) & (~OccupiedBB[color][ANY_PIECE]);
-			captures &= OccupiedBB[enemyColor][ANY_PIECE];
+			add_piece_moves_noisy(pos, list, from, captures);
+			add_piece_moves_quiet(pos, list, from, moves ^ captures);
 		}
 
-		while (captures) {
-			Square to = pop_lsb(&captures);
-			PieceType capturedPt = pos.piece_on_sq(to);
-
-			add_capture_move(pos, list, make(from, to, movingPt, capturedPt, NO_PIECE, NO_FLAG));
-		}
+		if (pos.castling_rights())
+			add_castling_moves(pos, list);
 	}
 	
-	void get_captures(Position& pos, Movelist& list) {
-		int color = pos.side_to_move();
-		Bitboard allpieces = OccupiedBB[color][ANY_PIECE];
+	void get_moves_noisy(Position& pos, Movelist& list) {
+		Color us = pos.side_to_move();
+		Color them = ~us;
+		Bitboard pawns = OccupiedBB[us][PAWN];
+		Bitboard pieces = OccupiedBB[us][PIECETYPE_ANY] ^ pawns;
 
-		while (allpieces)
-			add_captures(pos, list, pop_lsb(&allpieces));
+		while (pawns)
+			add_pawn_moves_noisy(pos, list, pop_lsb(&pawns));
+
+		while (pieces)
+		{
+			Square from = pop_lsb(&pieces);
+			PieceType movingPt = pos.piece_on_sq(from);
+			Bitboard captures = pos.attacks_from(movingPt, from) & (~OccupiedBB[us][PIECETYPE_ANY]);
+			captures &= OccupiedBB[them][PIECETYPE_ANY];
+
+			add_piece_moves_noisy(pos, list, from, captures);
+		}
 	}
 }

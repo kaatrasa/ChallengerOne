@@ -110,7 +110,7 @@ namespace TypeConvertions {
 		charArray[2] = int_to_file(to & 7);
 		charArray[3] = int_to_rank(to >> 3);
 		
-		if (prom == NO_PIECE) {
+		if (prom == PIECETYPE_NONE) {
 			return std::string(charArray).substr(0, 4);
 		}
 		else {

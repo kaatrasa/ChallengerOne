@@ -175,7 +175,7 @@ namespace BB {
 				if (s1 != s2) SquareDistance[s1][s2] = std::max(distance<File>(s1, s2), distance<Rank>(s1, s2));
 
 		for (Color c = WHITE; c <= BOTH; ++c)
-			for (PieceType p = ANY_PIECE; p <= KING; ++p)
+			for (PieceType p = PIECETYPE_ANY; p <= KING; ++p)
 				OccupiedBB[c][p] = 0;
 
 		for (Square s = SQ_A1; s <= SQ_H8; ++s) {

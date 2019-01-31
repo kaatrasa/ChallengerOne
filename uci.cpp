@@ -39,13 +39,13 @@ Move parse_move(Position& pos, string moveStr) {
 	Movegen::get_moves(pos, list);
 	int moveNum = 0;
 	Move move = MOVE_NONE;
-	PieceType promPce = NO_PIECE;
+	PieceType promPce = PIECETYPE_NONE;
 
 	for (moveNum = 0; moveNum < list.count; ++moveNum) {
 		move = list.moves[moveNum].move;
 		if (from_sq(move) == from && to_sq(move) == to) {
 			promPce = promoted_piece(move);
-			if (promPce != NO_PIECE) {
+			if (promPce != PIECETYPE_NONE) {
 				if (promPce == ROOK && moveStr.back() == 'r') {
 					return move;
 				}
@@ -228,12 +228,20 @@ namespace UCI{
 		auto type = eval >= VALUE_MATE_IN_MAX_PLY ? "mate "
 				  : eval <= VALUE_MATED_IN_MAX_PLY ? "mate " : "cp ";
 
+		// Used time
+		auto time = Timeman::get_time() - info.startTime;
+		
+		// Nodes per second
+		auto nps = info.nodes / (time <= 0 ? 1 : time);
+		nps *= 1000;
+
 		// Do reporting
 		std::cout << "info"
 				  << " depth " << depth
 			 	  << " score " << type << score
 				  << " nodes " << info.nodes
-				  << " time " << Timeman::get_time() - info.startTime
+				  << " time " << time
+				  << " nps " << nps
 				  << " pv ";
 		pos.print_pv();
 	}

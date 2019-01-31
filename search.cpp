@@ -17,12 +17,12 @@ namespace Search {
 
 	static void pick_move(int moveNum, Movelist& list) {
 		MoveEntry temp;
-		int bestScore = 0;
+		Order bestScore = ORDER_ZERO;
 		int bestNum = moveNum;
 
 		for (int index = moveNum; index < list.count; ++index) {
-			if (list.moves[index].score > bestScore) {
-				bestScore = list.moves[index].score;
+			if (list.moves[index].order > bestScore) {
+				bestScore = list.moves[index].order;
 				bestNum = index;
 			}
 		}
@@ -56,12 +56,12 @@ namespace Search {
 		// Check for position in TT
 		TTEntry* ttEntry = TT.probe(pos.pos_key(), found);
 		if (found) {
-			if (ttEntry->flag == EXACT) {
+			if (ttEntry->bound == BOUND_EXACT) {
 				return ttEntry->value;
 			}
-			else if (ttEntry->flag == LOWERBOUND)
+			else if (ttEntry->bound == BOUND_LOWER)
 				alpha = std::max(alpha, ttEntry->value);
-			else if (ttEntry->flag == UPPERBOUND)
+			else if (ttEntry->bound == BOUND_UPPER)
 				beta = std::min(beta, ttEntry->value);
 
 			if (alpha >= beta) return ttEntry->value;
@@ -77,7 +77,7 @@ namespace Search {
 			alpha = score;
 
 		Movelist list = Movelist();
-		Movegen::get_captures(pos, list);
+		Movegen::get_moves_noisy(pos, list);
 
 		int legal = 0;
 		Value oldAlpha = alpha;
@@ -116,7 +116,7 @@ namespace Search {
 		Value eval, ttValue = VALUE_NONE, bestValue = -VALUE_INFINITE, childValue, alphaOrig = alpha;
 		Value futilityMargin, seeMargin[2];
 		Move ttMove = MOVE_NONE, bestMove = MOVE_NONE, move = MOVE_NONE;
-		Depth R;
+		Depth r;
 		bool ttHit, inCheck, doFullSearch;
 		int legalCount = 0;
 
@@ -160,11 +160,11 @@ namespace Search {
 			if (rootNode)
 				info.bestMove = ttMove;
 
-			if (ttEntry->flag == EXACT) 
+			if (ttEntry->bound == BOUND_EXACT) 
 				return ttValue;
-			else if (ttEntry->flag == LOWERBOUND)
+			else if (ttEntry->bound == BOUND_LOWER)
 				alpha = std::max(alpha, ttValue);
-			else if (ttEntry->flag == UPPERBOUND)
+			else if (ttEntry->bound == BOUND_UPPER)
 				beta = std::min(beta, ttValue);
 		
 			if (alpha >= beta) return ttValue;
@@ -214,10 +214,10 @@ namespace Search {
 			&&  pos.non_pawn_material(us))
 		{
 
-			R = Depth(4) + depth / 6 + Depth(std::min(3, int(eval - beta) / 200));
+			r = Depth(4) + depth / 6 + Depth(std::min(3, int(eval - beta) / 200));
 
 			pos.do_null_move();
-			Value nullValue = -search<NonPV>(-beta, -beta + 1, depth - R, pos, info, false);
+			Value nullValue = -search<NonPV>(-beta, -beta + 1, depth - r, pos, info, false);
 			pos.undo_null_move();
 			
 			if (nullValue >= beta)
@@ -238,7 +238,7 @@ namespace Search {
 		if (ttMove != MOVE_NONE) {
 			for (int moveNum = 0; moveNum < list.count; ++moveNum) {
 				if (list.moves[moveNum].move == ttMove) {
-					list.moves[moveNum].score = 2000000;
+					list.moves[moveNum].order = ORDER_TT;
 					break;
 				}
 			}
@@ -253,9 +253,9 @@ namespace Search {
 			if (!pos.do_move(move)) 
 				continue;
 
-			bool isCapture = move & FLAGCAP;
-			bool isPromotion = move & FLAGPROM;
-			bool gaveCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[us][ANY_PIECE];
+			bool isCapture = move & FLAG_CAP;
+			bool isPromotion = move & FLAG_PROM;
+			bool gaveCheck = pos.attackers_to(pos.king_sq()) & OccupiedBB[us][PIECETYPE_ANY];
 
 			legalCount++;
 			
@@ -311,7 +311,7 @@ namespace Search {
 					}
 
 					if (!isCapture)
-						pos.history_move_set(bestMove, (int)depth*depth);
+						pos.history_move_set(bestMove, (Order)depth);
 				}
 			}
 		}
@@ -320,19 +320,15 @@ namespace Search {
 		if (rootNode)
 			info.bestMove = bestMove;
 		
-		if (legalCount == 0) {
-			if (inCheck)
-				return mated_in(pos.ply());
-			else
-				return VALUE_DRAW;
-		}
+		if (legalCount == 0) return inCheck ? mated_in(pos.ply()) : VALUE_DRAW;
 
-		if (bestValue <= alphaOrig)
-			TT.save(pos.pos_key(), bestMove, bestValue, UPPERBOUND, depth);
-		else if (bestValue >= beta)
-			TT.save(pos.pos_key(), bestMove, bestValue, LOWERBOUND, depth);
-		else
-			TT.save(pos.pos_key(), bestMove, bestValue, EXACT, depth);
+
+		// Save search results into tt
+		Bound bound = bestValue >= beta ? BOUND_LOWER
+					 : bestValue > alphaOrig ? BOUND_EXACT 
+				     : BOUND_UPPER;
+
+		TT.save(pos.pos_key(), bestMove, bestValue, bound, depth);
 
 		return bestValue;
 	}

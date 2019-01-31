@@ -26,7 +26,7 @@ namespace Zobrist {
 
 	void init_keys() {
 		for (Color c = WHITE; c < BOTH; ++c) {
-			for (PieceType p = NO_PIECE; p <= KING; ++p) {
+			for (PieceType p = PIECETYPE_NONE; p <= KING; ++p) {
 				for (Square s = SQ_A1; s <= SQ_H8; ++s) {
 					psq[c][p][s] = rand64();
 				}
@@ -133,7 +133,7 @@ void Position::print_pv() {
 		++pvCount;
 
 	} while (ttHit
-		&&   ttEntry->flag == EXACT
+		&&   ttEntry->bound == BOUND_EXACT
 		&&   is_real_move(move));
 
 	std::cout << std::endl;
@@ -214,8 +214,8 @@ void Position::add_piece(Piece pc, Square s) {
 void Position::add_pawn(Color c, Square s) {
 	OccupiedBB[c][PAWN] |= SquareBB[s];
 	OccupiedBB[BOTH][PAWN] |= SquareBB[s];
-	OccupiedBB[c][ANY_PIECE] |= SquareBB[s];
-	OccupiedBB[BOTH][ANY_PIECE] |= SquareBB[s];
+	OccupiedBB[c][PIECETYPE_ANY] |= SquareBB[s];
+	OccupiedBB[BOTH][PIECETYPE_ANY] |= SquareBB[s];
 
 	pieces_[s] = PAWN;
 	psq_[PHASE_MID] += c == WHITE ? PawnValueMg : -PawnValueMg;
@@ -225,8 +225,8 @@ void Position::add_pawn(Color c, Square s) {
 void Position::add_knight(Color c, Square s) {
 	OccupiedBB[c][KNIGHT] |= SquareBB[s];
 	OccupiedBB[BOTH][KNIGHT] |= SquareBB[s];
-	OccupiedBB[c][ANY_PIECE] |= SquareBB[s];
-	OccupiedBB[BOTH][ANY_PIECE] |= SquareBB[s];
+	OccupiedBB[c][PIECETYPE_ANY] |= SquareBB[s];
+	OccupiedBB[BOTH][PIECETYPE_ANY] |= SquareBB[s];
 
 	pieces_[s] = KNIGHT;
 	psq_[PHASE_MID] += c == WHITE ? KnightValueMg : -KnightValueMg;
@@ -237,8 +237,8 @@ void Position::add_knight(Color c, Square s) {
 void Position::add_bishop(Color c, Square s) {
 	OccupiedBB[c][BISHOP] |= SquareBB[s];
 	OccupiedBB[BOTH][BISHOP] |= SquareBB[s];
-	OccupiedBB[c][ANY_PIECE] |= SquareBB[s];
-	OccupiedBB[BOTH][ANY_PIECE] |= SquareBB[s];
+	OccupiedBB[c][PIECETYPE_ANY] |= SquareBB[s];
+	OccupiedBB[BOTH][PIECETYPE_ANY] |= SquareBB[s];
 
 	pieces_[s] = BISHOP;
 	psq_[PHASE_MID] += c == WHITE ? BishopValueMg : -BishopValueMg;
@@ -249,8 +249,8 @@ void Position::add_bishop(Color c, Square s) {
 void Position::add_rook(Color c, Square s) {
 	OccupiedBB[c][ROOK] |= SquareBB[s];
 	OccupiedBB[BOTH][ROOK] |= SquareBB[s];
-	OccupiedBB[c][ANY_PIECE] |= SquareBB[s];
-	OccupiedBB[BOTH][ANY_PIECE] |= SquareBB[s];
+	OccupiedBB[c][PIECETYPE_ANY] |= SquareBB[s];
+	OccupiedBB[BOTH][PIECETYPE_ANY] |= SquareBB[s];
 
 	pieces_[s] = ROOK;
 	psq_[PHASE_MID] += c == WHITE ? RookValueMg : -RookValueMg;
@@ -261,8 +261,8 @@ void Position::add_rook(Color c, Square s) {
 void Position::add_queen(Color c, Square s) {
 	OccupiedBB[c][QUEEN] |= SquareBB[s];
 	OccupiedBB[BOTH][QUEEN] |= SquareBB[s];
-	OccupiedBB[c][ANY_PIECE] |= SquareBB[s];
-	OccupiedBB[BOTH][ANY_PIECE] |= SquareBB[s];
+	OccupiedBB[c][PIECETYPE_ANY] |= SquareBB[s];
+	OccupiedBB[BOTH][PIECETYPE_ANY] |= SquareBB[s];
 
 	pieces_[s] = QUEEN;
 	psq_[PHASE_MID] += c == WHITE ? QueenValueMg : -QueenValueMg;
@@ -273,8 +273,8 @@ void Position::add_queen(Color c, Square s) {
 void Position::add_king(Color c, Square s) {
 	OccupiedBB[c][KING] |= SquareBB[s];
 	OccupiedBB[BOTH][KING] |= SquareBB[s];
-	OccupiedBB[c][ANY_PIECE] |= SquareBB[s];
-	OccupiedBB[BOTH][ANY_PIECE] |= SquareBB[s];
+	OccupiedBB[c][PIECETYPE_ANY] |= SquareBB[s];
+	OccupiedBB[BOTH][PIECETYPE_ANY] |= SquareBB[s];
 
 	kingSq_[c] = s;
 	pieces_[s] = KING;
@@ -288,11 +288,11 @@ void Position::clear_pieces() {
 		OccupiedBB[c][ROOK] = 0;
 		OccupiedBB[c][QUEEN] = 0;
 		OccupiedBB[c][KING] = 0;
-		OccupiedBB[c][ANY_PIECE] = 0;
+		OccupiedBB[c][PIECETYPE_ANY] = 0;
 	}
 
 	for (Square sq = SQ_A1; sq <= SQ_H8; ++sq)
-		pieces_[sq] = NO_PIECE;
+		pieces_[sq] = PIECETYPE_NONE;
 
 	for (Phase p = PHASE_MID; p <= PHASE_END; ++p)
 		psq_[p] = VALUE_ZERO;
@@ -302,7 +302,7 @@ void Position::clear_pieces() {
 }
 
 Piece Position::piece_at_square(Square sq) const {
-	if (!(SquareBB[sq] & OccupiedBB[BOTH][ANY_PIECE])) return EMPTY;
+	if (!(SquareBB[sq] & OccupiedBB[BOTH][PIECETYPE_ANY])) return EMPTY;
 	if (SquareBB[sq] & OccupiedBB[WHITE][PAWN]) return wP;
 	if (SquareBB[sq] & OccupiedBB[BLACK][PAWN]) return bP;
 	if (SquareBB[sq] & OccupiedBB[WHITE][KNIGHT]) return wN;
@@ -322,7 +322,7 @@ void Position::calculate_pos_key() {
 	posKey_ = 0;
 
 	for (int sq = 0; sq < 64; ++sq)
-		if (!((OccupiedBB[BOTH][ANY_PIECE] >> sq) & 1)) continue; // empty square
+		if (!((OccupiedBB[BOTH][PIECETYPE_ANY] >> sq) & 1)) continue; // empty square
 		else if (((OccupiedBB[WHITE][PAWN] >> sq) & 1) == 1) posKey_ ^= Zobrist::psq[WHITE][PAWN][sq];
 		else if (((OccupiedBB[BLACK][PAWN] >> sq) & 1) == 1) posKey_ ^= Zobrist::psq[BLACK][PAWN][sq];
 		else if (((OccupiedBB[WHITE][KNIGHT] >> sq) & 1) == 1) posKey_ ^= Zobrist::psq[WHITE][KNIGHT][sq];
@@ -354,7 +354,7 @@ bool Position::do_move(const Move move) {
 
 	history_[hisPly_].posKey = posKey_;
 
-	if (move & FLAGEP) {
+	if (move & FLAG_EP) {
 		if (side == WHITE) {
 			clear_piece(to + SOUTH, BLACK);
 		}
@@ -362,7 +362,7 @@ bool Position::do_move(const Move move) {
 			clear_piece(to + NORTH, WHITE);
 		}
 	}
-	else if (move & FLAGCA) {
+	else if (move & FLAG_CASTLE) {
 		switch (to) {
 		case SQ_C1: move_piece(SQ_A1, SQ_D1, WHITE); break;
 		case SQ_G1: move_piece(SQ_H1, SQ_F1, WHITE); break;
@@ -401,7 +401,7 @@ bool Position::do_move(const Move move) {
 
 	if (pieces_[from] == PAWN) {
 		fiftyMove_ = 0;
-		if (move & FLAGPS) {
+		if (move & FLAG_PS) {
 			if (side == WHITE) {
 				enPassant_ = from + NORTH;
 			}
@@ -427,7 +427,7 @@ bool Position::do_move(const Move move) {
 	sideToMove_ = sideToMove_ == WHITE ? BLACK : WHITE;
 	posKey_ ^= Zobrist::side;
 
-	if (attackers_to(kingSq_[side]) & OccupiedBB[enemySide][ANY_PIECE]) {
+	if (attackers_to(kingSq_[side]) & OccupiedBB[enemySide][PIECETYPE_ANY]) {
 		undo_move();
 		return false;
 	}
@@ -457,7 +457,7 @@ void Position::undo_move() {
 	sideToMove_ = sideToMove_ == WHITE ? BLACK : WHITE;
 	posKey_ ^= Zobrist::side;
 
-	if (move & FLAGEP) {
+	if (move & FLAG_EP) {
 		if (sideToMove_ == WHITE) {
 			add_piece(to + SOUTH, PAWN, BLACK);
 		}
@@ -465,7 +465,7 @@ void Position::undo_move() {
 			add_piece(to + NORTH, PAWN, WHITE);
 		}
 	}
-	else if (move & FLAGCA) {
+	else if (move & FLAG_CASTLE) {
 		switch (to) {
 		case SQ_C1: move_piece(SQ_D1, SQ_A1, WHITE); break;
 		case SQ_G1: move_piece(SQ_F1, SQ_H1, WHITE); break;
@@ -527,13 +527,13 @@ void Position::clear_piece(const Square s, const Color c) {
 	// Remove piece from posKey
 	posKey_ ^= Zobrist::psq[c][pt][s];
 	// Remove piece from piecelist
-	pieces_[s] = NO_PIECE;
+	pieces_[s] = PIECETYPE_NONE;
 
 	// Remove piece from bitboards
 	clear_bit(OccupiedBB[c][pt], s);
-	clear_bit(OccupiedBB[c][ANY_PIECE], s);
+	clear_bit(OccupiedBB[c][PIECETYPE_ANY], s);
 	clear_bit(OccupiedBB[BOTH][pt], s);
-	clear_bit(OccupiedBB[BOTH][ANY_PIECE], s);
+	clear_bit(OccupiedBB[BOTH][PIECETYPE_ANY], s);
 
 	// Update psq
 	psq_[PHASE_MID] -= PSQT::psq[c][pt][s][PHASE_MID];
@@ -552,9 +552,9 @@ void Position::add_piece(const Square s, const PieceType pt, const Color c) {
 
 	// Add piece to bitboards
 	set_bit(OccupiedBB[c][pt], s);
-	set_bit(OccupiedBB[c][ANY_PIECE], s);
+	set_bit(OccupiedBB[c][PIECETYPE_ANY], s);
 	set_bit(OccupiedBB[BOTH][pt], s);
-	set_bit(OccupiedBB[BOTH][ANY_PIECE], s);
+	set_bit(OccupiedBB[BOTH][PIECETYPE_ANY], s);
 
 	// Update psq
 	psq_[PHASE_MID] += PSQT::psq[c][pt][s][PHASE_MID];
@@ -571,7 +571,7 @@ void Position::move_piece(const Square from, const Square to, const Color c) {
 	// Remove piece from posKey
 	posKey_ ^= Zobrist::psq[c][pt][from];
 	// Remove piece from piecelist
-	pieces_[from] = NO_PIECE;
+	pieces_[from] = PIECETYPE_NONE;
 
 	// Add piece to posKey
 	posKey_ ^= Zobrist::psq[c][pt][to];
@@ -580,15 +580,15 @@ void Position::move_piece(const Square from, const Square to, const Color c) {
 
 	// Remove piece from bitboards
 	clear_bit(OccupiedBB[c][pt], from);
-	clear_bit(OccupiedBB[c][ANY_PIECE], from);
+	clear_bit(OccupiedBB[c][PIECETYPE_ANY], from);
 	clear_bit(OccupiedBB[BOTH][pt], from);
-	clear_bit(OccupiedBB[BOTH][ANY_PIECE], from);
+	clear_bit(OccupiedBB[BOTH][PIECETYPE_ANY], from);
 
 	// Add piece to bitboards
 	set_bit(OccupiedBB[c][pt], to);
-	set_bit(OccupiedBB[c][ANY_PIECE], to);
+	set_bit(OccupiedBB[c][PIECETYPE_ANY], to);
 	set_bit(OccupiedBB[BOTH][pt], to);
-	set_bit(OccupiedBB[BOTH][ANY_PIECE], to);
+	set_bit(OccupiedBB[BOTH][PIECETYPE_ANY], to);
 
 	// Update psq
 	psq_[PHASE_MID] -= PSQT::psq[c][pt][from][PHASE_MID];
